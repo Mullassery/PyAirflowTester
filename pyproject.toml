@@ -69,7 +69,7 @@ Repository = "https://github.com/mullassery/pyairflowtester"
 pyairflowtester = "pyairflowtester.cli:main"
 
 [tool.maturin]
-python-packages = ["pyairflowtester"]
+python-packages = ["python/pyairflowtester"]
 module-name = "pyairflowtester._core"
 
 [tool.pytest.ini_options]
