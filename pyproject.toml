@@ -1,0 +1,109 @@
+[build-system]
+requires = ["maturin>=1.5,<2"]
+build-backend = "maturin"
+
+[project]
+name = "pyairflowtester"
+version = "0.1.0"
+description = "Unified Airflow + dbt reliability and quality platform"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Proprietary" }
+authors = [
+    { name = "PyAirflowTester Contributors" }
+]
+keywords = ["airflow", "dbt", "reliability", "testing", "quality"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: Other/Proprietary License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Quality Assurance",
+]
+
+dependencies = [
+    "click>=8.1.7",
+    "rich>=13.7.0",
+    "pydantic>=2.5.0",
+    "sqlalchemy>=2.0.23",
+    "psycopg2-binary>=2.9.9",
+    "jinja2>=3.1.2",
+    "python-dateutil>=2.8.2",
+    "pyyaml>=6.0.1",
+    "opentelemetry-api>=1.20.0",
+    "opentelemetry-sdk>=1.20.0",
+    "opentelemetry-exporter-otlp>=1.20.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.3",
+    "pytest-cov>=4.1.0",
+    "pytest-asyncio>=0.21.1",
+    "black>=23.12.0",
+    "ruff>=0.1.11",
+    "mypy>=1.7.1",
+    "pre-commit>=3.5.0",
+]
+
+otel = [
+    "opentelemetry-exporter-datadog>=1.20.0",
+    "opentelemetry-exporter-honeycomb>=0.0.1",
+]
+
+all = [
+    "pyairflowtester[dev,otel]",
+]
+
+[project.urls]
+Homepage = "https://github.com/mullassery/pyairflowtester"
+Documentation = "https://pyairflowtester.readthedocs.io"
+Repository = "https://github.com/mullassery/pyairflowtester"
+"Bug Tracker" = "https://github.com/mullassery/pyairflowtester/issues"
+
+[project.scripts]
+pyairflowtester = "pyairflowtester.cli:main"
+
+[tool.maturin]
+python-packages = ["pyairflowtester"]
+module-name = "pyairflowtester._core"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+addopts = "-v --cov=pyairflowtester --cov-report=term-missing"
+
+[tool.coverage.run]
+source = ["pyairflowtester"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
+
+[tool.black]
+line-length = 100
+target-version = ["py310"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+select = ["E", "F", "W", "I"]
+
+[tool.mypy]
+python_version = "3.10"
+check_untyped_defs = true
+disallow_untyped_defs = false
+warn_return_any = true
+warn_unused_configs = true
+disallow_incomplete_defs = false

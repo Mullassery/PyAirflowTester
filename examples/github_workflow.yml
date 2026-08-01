@@ -1,0 +1,123 @@
+name: PyAirflowTester Analysis
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'dags/**'
+      - 'dbt/**'
+      - 'airflow.cfg'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'dags/**'
+      - 'dbt/**'
+      - 'airflow.cfg'
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  pyairflowtester-scan:
+    name: PyAirflowTester Static Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install PyAirflowTester
+        run: pip install pyairflowtester
+
+      - name: Scan DAGs and dbt
+        id: scan
+        run: |
+          pyairflowtester scan . \
+            --dags ./dags \
+            --dbt ./dbt \
+            --format sarif \
+            --output results.sarif \
+            --severity high
+        continue-on-error: true
+
+      - name: Calculate Risk Score
+        id: score
+        run: |
+          pyairflowtester score . > score.txt || true
+          cat score.txt
+
+      - name: Generate HTML Report
+        run: |
+          pyairflowtester scan . \
+            --dags ./dags \
+            --dbt ./dbt \
+            --format html \
+            --output report.html \
+            --severity low
+        continue-on-error: true
+
+      - name: Upload SARIF to GitHub
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: results.sarif
+          category: pyairflowtester
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            let scoreContent = '';
+            try {
+              scoreContent = fs.readFileSync('score.txt', 'utf8');
+            } catch (e) {
+              scoreContent = 'Score calculation skipped';
+            }
+
+            const comment = `## PyAirflowTester Analysis
+
+            ### Risk Score
+            \`\`\`
+            ${scoreContent}
+            \`\`\`
+
+            **Report:** Check the "SARIF" tab for detailed violations.
+
+            <details>
+            <summary>View Full Report</summary>
+
+            The full HTML report has been generated. Check the build artifacts.
+
+            </details>`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+      - name: Upload Reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: pyairflowtester-reports
+          path: |
+            results.sarif
+            report.html
+            score.txt
+          retention-days: 30
+
+      - name: Fail if critical violations found
+        run: |
+          if grep -q "critical" results.sarif; then
+            echo "Critical violations found!"
+            exit 1
+          fi
