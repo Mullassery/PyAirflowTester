@@ -66,6 +66,9 @@ Before deploying changes:
 
 ```bash
 pip install pyairflowtester
+
+# Verify installation
+airflowtester --version
 ```
 
 For full features including observability:
