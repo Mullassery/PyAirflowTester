@@ -66,6 +66,8 @@ Before deploying changes:
 
 ```bash
 pip install pyairflowtester
+# or with uv
+uv pip install airflowtester
 
 # Verify installation
 airflowtester --version
