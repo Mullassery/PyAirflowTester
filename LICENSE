@@ -1,36 +1,22 @@
-PROPRIETARY LICENSE AGREEMENT
+Proprietary License — Free to use with explicit attribution
 
-Copyright 2024 PyAirflowTester. All rights reserved.
+Copyright © 2026 Georgi Mammen Mullassery
 
-TERMS AND CONDITIONS:
+Permission is granted to any person obtaining a copy of this software to use,
+copy, modify, and distribute this software and its documentation, provided that:
 
-1. LICENSE GRANT
-   PyAirflowTester grants you a limited, non-exclusive, non-transferable
-   license to use this Software solely for your internal business purposes.
+1. The above copyright notice and this permission notice appear in all copies
+   or substantial portions of the software.
 
-2. RESTRICTIONS
-   You may not:
-   - Sublicense, sell, rent, lease, transfer, assign or otherwise
-     dispose of this Software or any copy thereof
-   - Reverse engineer, disassemble, decompile, or otherwise attempt to
-     derive the source code of this Software
-   - Remove or alter any proprietary notices or labels on this Software
-   - Use this Software to develop a competing product
-   - Use this Software in any application that is provided to third parties
+2. Explicit attribution to the original author (Georgi Mammen Mullassery) is
+   provided in any project documentation and significant code comments where
+   this software is used.
 
-3. OWNERSHIP
-   This Software is owned by PyAirflowTester and is protected by copyright,
-   trademark, and other intellectual property laws.
+3. The software is provided "AS IS" without warranty of any kind, express or
+   implied, including but not limited to the warranties of merchantability,
+   fitness for a particular purpose, or non-infringement.
 
-4. LIMITATION OF LIABILITY
-   IN NO EVENT SHALL PYAIRFLOWTESTER BE LIABLE FOR ANY INDIRECT, INCIDENTAL,
-   SPECIAL, CONSEQUENTIAL OR PUNITIVE DAMAGES ARISING OUT OF OR RELATED TO
-   THIS LICENSE OR THE USE OF THE SOFTWARE, EVEN IF ADVISED OF THE
-   POSSIBILITY OF SUCH DAMAGES.
+4. In no event shall the author be liable for any claim, damages, or other
+   liability arising from the use of this software.
 
-5. TERMINATION
-   This license is effective until terminated. Your rights under this
-   license will terminate automatically without notice if you fail to
-   comply with any terms of this Agreement.
-
-For licensing inquiries, please contact: licensing@pyairflowtester.com
+For more information, visit: https://github.com/Mullassery
