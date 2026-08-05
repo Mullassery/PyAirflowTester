@@ -11,10 +11,6 @@ license = "Proprietary"
 name = "pyairflowtester"
 crate-type = ["cdylib"]
 
-[[bin]]
-name = "pyairflowtester_cli"
-path = "src/bin/cli.rs"
-
 [dependencies]
 pyo3 = { version = "0.20", features = ["extension-module"] }
 tokio = { version = "1.35", features = ["full"] }
