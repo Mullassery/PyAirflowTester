@@ -4,15 +4,14 @@ PyAirflowTester CLI: Command-line interface for artifact and runtime analysis.
 
 import logging
 from pathlib import Path
-from typing import Optional
 
 import click
 from rich.console import Console
 from rich.table import Table
 
-from pyairflowtester.scanner import Scanner
-from pyairflowtester.analyzer import Analyzer
+from pyairflowtester.analyzer import Analyzer, AnalyzerNotImplementedError
 from pyairflowtester.report import ReportGenerator
+from pyairflowtester.scanner import Scanner
 
 # Configure logging
 logging.basicConfig(
@@ -44,6 +43,11 @@ def main():
     help="Path to dbt project directory",
 )
 @click.option(
+    "--airflow-cfg",
+    type=click.Path(exists=True),
+    help="Path to airflow.cfg for configuration auditing",
+)
+@click.option(
     "--format",
     type=click.Choice(["json", "html", "markdown", "sarif"]),
     default="json",
@@ -61,7 +65,7 @@ def main():
     default="medium",
     help="Minimum severity level to report",
 )
-def scan(path, dags, dbt, format, output, severity):
+def scan(path, dags, dbt, airflow_cfg, format, output, severity):
     """
     Scan Airflow DAGs and dbt projects for issues.
 
@@ -89,7 +93,15 @@ def scan(path, dags, dbt, format, output, severity):
     else:
         dbt_violations = []
 
-    all_violations = dag_violations + dbt_violations
+    # Scan airflow.cfg if path provided
+    if airflow_cfg:
+        console.print("[yellow]Scanning Airflow configuration...[/yellow]")
+        config_violations = scanner.scan_config(Path(airflow_cfg))
+        console.print(f"  Found {len(config_violations)} violations\n")
+    else:
+        config_violations = []
+
+    all_violations = dag_violations + dbt_violations + config_violations
 
     if not all_violations:
         console.print("[green]✓ No violations found![/green]")
@@ -228,19 +240,17 @@ def connect(airflow_home, airflow_db):
     """
     Connect to Airflow instance for runtime analysis.
 
-    Configures connection to live Airflow metadata database and
-    enables runtime analysis features.
+    NOTE: Runtime analysis (the Analyzer subsystem) is not yet implemented.
+    This command reports that plainly instead of a fake success message.
     """
     console.print("[bold cyan]PyAirflowTester Runtime Connection[/bold cyan]\n")
 
-    if airflow_home:
-        console.print(f"[yellow]Detecting Airflow instance...[/yellow]")
-        console.print(f"  AIRFLOW_HOME: {airflow_home}")
-    elif airflow_db:
-        console.print(f"[yellow]Connecting to database...[/yellow]")
-        console.print(f"  Connection: {airflow_db[:30]}...")
-
-    console.print("[green]✓ Connection successful[/green]")
+    analyzer = Analyzer(airflow_home=airflow_home, airflow_db=airflow_db)
+    try:
+        analyzer.connect()
+    except AnalyzerNotImplementedError as e:
+        console.print(f"[red]✗ {e}[/red]")
+        raise SystemExit(1)
 
 
 def _display_violations(violations):
@@ -275,6 +285,14 @@ def _display_violations(violations):
         table.add_row("...", "...", "...", f"... and {len(violations) - 20} more")
 
     console.print(table)
+
+
+# Register the dependency-intelligence command group (graph build/impact/
+# blast-radius/etc.). This was previously defined but never attached to the
+# main CLI group, so `pyairflowtester dependency ...` did not work.
+from pyairflowtester.dependency_intelligence.cli import register_dependency_cli  # noqa: E402
+
+register_dependency_cli(main)
 
 
 if __name__ == "__main__":

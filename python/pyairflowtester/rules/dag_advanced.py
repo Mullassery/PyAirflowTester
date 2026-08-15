@@ -4,8 +4,8 @@ Advanced DAG analysis rules (AFW005-AFW015).
 These rules detect more subtle anti-patterns and configuration issues.
 """
 
-from typing import List, Dict, Any
 import re
+from typing import Any, Dict, List
 
 
 class BaseRule:
@@ -89,8 +89,8 @@ class CatchupConfigRule(BaseRule):
         return violations
 
 
-class PoolConfigurationRule(BaseRule):
-    """Detect default pool usage."""
+class SourceCodePoolConfigurationRule(BaseRule):
+    """Detect default pool usage in DAG source code (AFW007)."""
 
     def __init__(self):
         super().__init__()

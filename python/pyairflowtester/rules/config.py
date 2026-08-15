@@ -4,7 +4,7 @@ Airflow configuration audit rules (CFG001-CFG015).
 These rules check airflow.cfg and runtime configuration for best practices.
 """
 
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 
 class BaseRule:
@@ -63,8 +63,8 @@ class ExecutorConfigurationRule(BaseRule):
         return violations
 
 
-class PoolConfigurationRule(BaseRule):
-    """Check pool configuration."""
+class AirflowCfgPoolConfigurationRule(BaseRule):
+    """Check pool configuration in airflow.cfg (CFG002)."""
 
     def __init__(self):
         super().__init__()

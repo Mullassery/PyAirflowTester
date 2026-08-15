@@ -4,46 +4,46 @@ Rules package for PyAirflowTester.
 Contains rule definitions for DAG, dbt, configuration, and other analysis.
 """
 
+from pyairflowtester.rules.config import (
+    AirflowCfgPoolConfigurationRule,
+    ConcurrencyConfigurationRule,
+    DAGFolderConfigurationRule,
+    DatabaseBackupRule,
+    EncryptionConfigurationRule,
+    ExecutorConfigurationRule,
+    LogRetentionRule,
+    LogStorageRule,
+    MaxActiveRunsRule,
+    QueueConfigurationRule,
+    RBACConfigurationRule,
+    SchedulerConfigurationRule,
+    TLSConfigurationRule,
+    WorkerConfigurationRule,
+    XComConfigurationRule,
+)
 from pyairflowtester.rules.dag import (
     CircularDependencyRule,
-    MissingSLARule,
     ExpensiveImportsRule,
+    MissingSLARule,
     ParseTimeRule,
 )
 from pyairflowtester.rules.dag_advanced import (
-    TaskCountRule,
-    CatchupConfigRule,
-    PoolConfigurationRule,
-    HardcodedConnectionRule,
-    SecretsInCodeRule,
-    RetryConfigurationRule,
-    SensorTimeoutRule,
-    BranchComplexityRule,
-    DocumentationRule,
     AlertingConfigurationRule,
+    BranchComplexityRule,
+    CatchupConfigRule,
+    DocumentationRule,
+    HardcodedConnectionRule,
     OperatorDeprecationRule,
+    RetryConfigurationRule,
+    SecretsInCodeRule,
+    SensorTimeoutRule,
+    SourceCodePoolConfigurationRule,
+    TaskCountRule,
 )
 from pyairflowtester.rules.dbt import (
     MissingTestsRule,
     RedundantTestsRule,
     UntestedModelRule,
-)
-from pyairflowtester.rules.config import (
-    ExecutorConfigurationRule,
-    PoolConfigurationRule,
-    ConcurrencyConfigurationRule,
-    QueueConfigurationRule,
-    MaxActiveRunsRule,
-    XComConfigurationRule,
-    LogRetentionRule,
-    EncryptionConfigurationRule,
-    TLSConfigurationRule,
-    RBACConfigurationRule,
-    SchedulerConfigurationRule,
-    WorkerConfigurationRule,
-    LogStorageRule,
-    DatabaseBackupRule,
-    DAGFolderConfigurationRule,
 )
 
 
@@ -328,7 +328,7 @@ __all__ = [
     "ParseTimeRule",
     "TaskCountRule",
     "CatchupConfigRule",
-    "PoolConfigurationRule",
+    "SourceCodePoolConfigurationRule",
     "HardcodedConnectionRule",
     "SecretsInCodeRule",
     "RetryConfigurationRule",
@@ -343,6 +343,7 @@ __all__ = [
     "UntestedModelRule",
     # Config Rules
     "ExecutorConfigurationRule",
+    "AirflowCfgPoolConfigurationRule",
     "ConcurrencyConfigurationRule",
     "QueueConfigurationRule",
     "MaxActiveRunsRule",

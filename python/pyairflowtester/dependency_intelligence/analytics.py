@@ -1,17 +1,16 @@
 """Analytics engines for dependency intelligence (Phase 2: Weeks 5-8)."""
 
 import logging
-from typing import Dict, List, Set, Optional, Tuple
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Dict, List, Optional, Set, Tuple
 
-from .models import (
-    Node,
-    NodeType,
-    NodeSeverity,
-    DependencyGraph,
-)
 from .graph import DependencyGraphEngine
+from .models import (
+    DependencyGraph,
+    NodeSeverity,
+    NodeType,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -307,6 +306,11 @@ class SLAValidator:
 
 class TestCoverageAnalyzer:
     """Analyze test coverage for nodes."""
+
+    # Not a pytest test case; this only starts with "Test" because it
+    # analyzes test coverage. Prevents pytest from warning when it tries
+    # (and fails) to collect this as a test class.
+    __test__ = False
 
     def __init__(self, graph: DependencyGraph):
         self.graph = graph

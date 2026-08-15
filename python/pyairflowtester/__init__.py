@@ -5,27 +5,27 @@ A correlation-first reliability and quality platform that combines static analys
 runtime monitoring, and intelligent correlation to prevent data pipeline failures.
 """
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 __author__ = "PyAirflowTester Contributors"
 __license__ = "SSPL-1.0"
 
 try:
     from pyairflowtester._core import (
-        PyRule,
-        PyRuleViolation,
-        evaluate_rules,
-        PySeverity,
         PyCategory,
-        PyExecutionMode,
-        PyRuleContext,
-        PyRuleEngine,
         PyDagDefinition,
         PyDagParser,
         PyDbtModel,
-        PyDbtTest,
-        PyDbtProject,
         PyDbtParser,
+        PyDbtProject,
+        PyDbtTest,
+        PyExecutionMode,
+        PyRule,
+        PyRuleContext,
+        PyRuleEngine,
+        PyRuleViolation,
         PyScorer,
+        PySeverity,
+        evaluate_rules,
     )
 except ImportError:
     # Fallback if Rust extension not available
@@ -45,13 +45,14 @@ except ImportError:
     PyDbtParser = None
     PyScorer = None
 
-from pyairflowtester.scanner import Scanner
-from pyairflowtester.analyzer import Analyzer
+from pyairflowtester.analyzer import Analyzer, AnalyzerNotImplementedError
 from pyairflowtester.report import ReportGenerator
+from pyairflowtester.scanner import Scanner
 
 __all__ = [
     "Scanner",
     "Analyzer",
+    "AnalyzerNotImplementedError",
     "ReportGenerator",
     "PyRule",
     "PyRuleViolation",

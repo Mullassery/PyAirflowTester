@@ -7,19 +7,17 @@ from typing import Optional
 
 import click
 from rich.console import Console
-from rich.table import Table
 from rich.panel import Panel
-from rich.tree import Tree
+from rich.table import Table
 
-from .graph import DependencyGraphEngine
-from .parsers import AirflowDAGParser, dbtManifestParser, UnifiedGraphBuilder
 from .analyzers import (
-    ImpactAnalysisEngine,
     BlastRadiusEngine,
+    ImpactAnalysisEngine,
     RiskScoringEngine,
-    DriftDetectionEngine,
 )
-from .models import NodeSeverity, NodeType
+from .graph import DependencyGraphEngine
+from .models import NodeSeverity
+from .parsers import UnifiedGraphBuilder
 
 console = Console()
 logger = logging.getLogger(__name__)
@@ -65,7 +63,15 @@ def build(dags: Optional[str], dbt_manifest: Optional[str], datasets: Optional[s
         )
     )
 
-    # Output graph
+    # Output graph. Enum instances (e.g. node_types keys/values in stats)
+    # aren't JSON-serializable as-is, so normalize them to strings first.
+    json_safe_stats = dict(stats)
+    if "node_types" in json_safe_stats:
+        json_safe_stats["node_types"] = {
+            node_type.value: count
+            for node_type, count in json_safe_stats["node_types"].items()
+        }
+
     output.write(json.dumps(
         {
             "nodes": {
@@ -86,7 +92,7 @@ def build(dags: Optional[str], dbt_manifest: Optional[str], datasets: Optional[s
                 }
                 for e in graph.edges
             ],
-            "stats": stats,
+            "stats": json_safe_stats,
         },
         indent=2,
     ))

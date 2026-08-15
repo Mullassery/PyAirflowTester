@@ -1,18 +1,49 @@
 """
 Analyzer module for runtime analysis.
 
-Connects to live Airflow instances and dbt systems to analyze
-execution patterns, failures, and correlations.
+INTENTIONALLY UNIMPLEMENTED. This subsystem is meant to connect to live
+Airflow instances and dbt systems to analyze execution patterns, failures,
+and correlations. Building real runtime correlation isn't achievable
+without an actual live Airflow/dbt instance to develop and test against,
+so every method below raises AnalyzerNotImplementedError rather than
+silently returning an empty list/dict that could be mistaken for "analyzed,
+found nothing." See README for status.
 """
 
-from typing import Optional, List, Dict, Any
 import logging
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
 
+class AnalyzerNotImplementedError(NotImplementedError):
+    """Raised by Analyzer methods: runtime correlation is not yet built.
+
+    The Analyzer subsystem requires a live Airflow metadata database (and,
+    for dbt methods, a live dbt run history) to implement and validate
+    against. That is planned future work, not something safe to fake with
+    stub logic. Use the static `Scanner` (via `pyairflowtester scan`) for
+    the analysis that is actually implemented today.
+    """
+
+    def __init__(self, method_name: str):
+        super().__init__(
+            f"Analyzer.{method_name}() is not implemented. Runtime "
+            "correlation against live Airflow/dbt instances is a planned "
+            "feature, not yet built. Use `pyairflowtester scan` (static "
+            "analysis) for functionality that exists today."
+        )
+
+
 class Analyzer:
-    """Runtime analyzer for production pipelines."""
+    """Runtime analyzer for production pipelines. NOT YET IMPLEMENTED.
+
+    Every method on this class raises AnalyzerNotImplementedError. This
+    class is a placeholder for a future feature: correlating rule findings
+    against real DAG-run/task-instance history from a live Airflow metadata
+    database and real dbt test-run history. That requires a live
+    Airflow/dbt instance to build and validate against.
+    """
 
     def __init__(self, airflow_home: Optional[str] = None, airflow_db: Optional[str] = None):
         """
@@ -30,134 +61,70 @@ class Analyzer:
         """
         Connect to Airflow metadata database.
 
-        Returns:
-            True if connection successful
+        Raises:
+            AnalyzerNotImplementedError: always; not yet implemented.
         """
-        if self.airflow_db:
-            try:
-                logger.info("Connecting to Airflow database...")
-                # Connection logic here
-                logger.info("Successfully connected to Airflow database")
-                return True
-            except Exception as e:
-                logger.error(f"Failed to connect to database: {e}")
-                return False
-
-        return False
+        raise AnalyzerNotImplementedError("connect")
 
     def analyze_dag_failures(self, dag_id: str) -> List[Dict[str, Any]]:
         """
         Analyze failure patterns for a DAG.
 
-        Args:
-            dag_id: Airflow DAG ID
-
-        Returns:
-            List of failure patterns
+        Raises:
+            AnalyzerNotImplementedError: always; not yet implemented.
         """
-        logger.info(f"Analyzing failures for DAG: {dag_id}")
-
-        if not self.db_connection:
-            logger.warning("No database connection")
-            return []
-
-        patterns = []
-        # Analysis logic here
-
-        return patterns
+        raise AnalyzerNotImplementedError("analyze_dag_failures")
 
     def analyze_task_failures(self, dag_id: str, task_id: str) -> List[Dict[str, Any]]:
         """
         Analyze failure patterns for a task.
 
-        Args:
-            dag_id: Airflow DAG ID
-            task_id: Airflow task ID
-
-        Returns:
-            List of failure patterns
+        Raises:
+            AnalyzerNotImplementedError: always; not yet implemented.
         """
-        logger.info(f"Analyzing failures for {dag_id}.{task_id}")
-
-        patterns = []
-        # Analysis logic here
-
-        return patterns
+        raise AnalyzerNotImplementedError("analyze_task_failures")
 
     def detect_hotspots(self) -> List[Dict[str, Any]]:
         """
         Detect task hotspots (frequently failing tasks).
 
-        Returns:
-            List of hotspot tasks
+        Raises:
+            AnalyzerNotImplementedError: always; not yet implemented.
         """
-        logger.info("Detecting failure hotspots...")
-
-        hotspots = []
-        # Detection logic here
-
-        return hotspots
+        raise AnalyzerNotImplementedError("detect_hotspots")
 
     def analyze_cascade_failures(self) -> List[Dict[str, Any]]:
         """
         Analyze cascading failure patterns.
 
-        Returns:
-            List of cascade patterns
+        Raises:
+            AnalyzerNotImplementedError: always; not yet implemented.
         """
-        logger.info("Analyzing cascading failures...")
-
-        cascades = []
-        # Analysis logic here
-
-        return cascades
+        raise AnalyzerNotImplementedError("analyze_cascade_failures")
 
     def get_dbt_test_failures(self) -> List[Dict[str, Any]]:
         """
         Get dbt test failure history.
 
-        Returns:
-            List of test failures
+        Raises:
+            AnalyzerNotImplementedError: always; not yet implemented.
         """
-        logger.info("Analyzing dbt test failures...")
-
-        failures = []
-        # Analysis logic here
-
-        return failures
+        raise AnalyzerNotImplementedError("get_dbt_test_failures")
 
     def detect_flaky_tests(self) -> List[Dict[str, Any]]:
         """
         Detect flaky dbt tests.
 
-        Returns:
-            List of flaky tests
+        Raises:
+            AnalyzerNotImplementedError: always; not yet implemented.
         """
-        logger.info("Detecting flaky tests...")
-
-        flaky = []
-        # Detection logic here
-
-        return flaky
+        raise AnalyzerNotImplementedError("detect_flaky_tests")
 
     def calculate_blast_radius(self, source: str, source_type: str = "dag") -> Dict[str, Any]:
         """
         Calculate blast radius for a failure source.
 
-        Args:
-            source: Source identifier (dag_id or model_name)
-            source_type: Type of source (dag or model)
-
-        Returns:
-            Blast radius data
+        Raises:
+            AnalyzerNotImplementedError: always; not yet implemented.
         """
-        logger.info(f"Calculating blast radius for {source_type}: {source}")
-
-        blast_radius = {
-            "direct_downstream": [],
-            "all_downstream": [],
-            "affected_dags": [],
-            "impact_count": 0,
-        }
-
-        return blast_radius
+        raise AnalyzerNotImplementedError("calculate_blast_radius")

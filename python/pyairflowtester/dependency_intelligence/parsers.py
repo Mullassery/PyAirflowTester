@@ -4,15 +4,14 @@ import ast
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional, Any
+from typing import Any, Dict, List, Optional, Tuple
 
 from .models import (
-    Node,
-    Edge,
-    NodeType,
-    NodeSeverity,
-    RelationshipType,
     DependencyGraph,
+    Edge,
+    Node,
+    NodeType,
+    RelationshipType,
 )
 
 logger = logging.getLogger(__name__)
@@ -61,6 +60,12 @@ class AirflowDAGParser:
 
                 # Look for DAG() instantiation
                 if isinstance(node.func, ast.Name) and node.func.id == "DAG":
+                    # dag_id is idiomatically passed positionally: DAG('my_dag', ...)
+                    if node.args and isinstance(node.args[0], ast.Constant):
+                        dag_id = node.args[0].value
+                    elif node.args and isinstance(node.args[0], ast.Str):
+                        dag_id = node.args[0].s
+
                     for keyword in node.keywords:
                         if keyword.arg == "dag_id" and isinstance(keyword.value, ast.Constant):
                             dag_id = keyword.value.value
