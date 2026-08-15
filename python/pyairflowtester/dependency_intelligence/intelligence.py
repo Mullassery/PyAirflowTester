@@ -1,17 +1,15 @@
 """Intelligence engines for advanced analysis (Phase 3: Weeks 9-12)."""
 
 import logging
-from typing import Dict, List, Set, Optional, Tuple
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from typing import Dict, List, Optional
 
-from .models import (
-    Node,
-    NodeType,
-    NodeSeverity,
-    DependencyGraph,
-)
 from .graph import DependencyGraphEngine
+from .models import (
+    DependencyGraph,
+    NodeSeverity,
+)
 
 logger = logging.getLogger(__name__)
 

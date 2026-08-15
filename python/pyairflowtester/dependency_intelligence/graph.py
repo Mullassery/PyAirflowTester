@@ -1,15 +1,12 @@
 """Core dependency graph engine with traversal and analysis algorithms."""
 
-from collections import deque, defaultdict
-from typing import Dict, List, Set, Tuple, Optional, Any
 import logging
+from collections import deque
+from typing import Any, Dict, List, Optional, Set
 
 from .models import (
-    Node,
-    Edge,
     DependencyGraph,
     NodeType,
-    RelationshipType,
 )
 
 logger = logging.getLogger(__name__)

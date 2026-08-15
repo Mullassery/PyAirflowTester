@@ -4,11 +4,11 @@ Report generation module.
 Generates reports in multiple formats: JSON, HTML, Markdown, SARIF.
 """
 
-from pathlib import Path
-from typing import List, Dict, Any
 import json
 import logging
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 

@@ -3,8 +3,8 @@ Data models for PyAirflowTester.
 """
 
 from dataclasses import dataclass, field
-from typing import Optional, Dict, List, Any
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 # Severity weights for scoring
 SEVERITY_WEIGHTS = {

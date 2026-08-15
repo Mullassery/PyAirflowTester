@@ -1,13 +1,13 @@
 """Observability and monitoring engines (Phase 4: Weeks 13-16)."""
 
-import logging
 import json
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass, asdict
+import logging
+from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from enum import Enum
+from typing import Any, Dict, List, Optional
 
-from .models import Node, NodeSeverity, DependencyGraph
+from .models import DependencyGraph, NodeSeverity
 
 logger = logging.getLogger(__name__)
 

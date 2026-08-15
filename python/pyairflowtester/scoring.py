@@ -2,7 +2,8 @@
 Scoring and risk assessment module.
 """
 
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
 from pyairflowtester.models import SEVERITY_WEIGHTS
 
 

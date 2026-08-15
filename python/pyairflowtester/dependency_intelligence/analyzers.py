@@ -1,20 +1,20 @@
 """Analysis engines for dependency intelligence."""
 
 import logging
-from typing import Dict, List, Set, Optional
 from datetime import datetime
+from typing import Dict, List, Optional
 
-from .models import (
-    Node,
-    NodeType,
-    NodeSeverity,
-    DependencyGraph,
-    ImpactResult,
-    BlastRadiusResult,
-    RiskScoreResult,
-    DriftDetectionResult,
-)
 from .graph import DependencyGraphEngine
+from .models import (
+    BlastRadiusResult,
+    DependencyGraph,
+    DriftDetectionResult,
+    ImpactResult,
+    Node,
+    NodeSeverity,
+    NodeType,
+    RiskScoreResult,
+)
 
 logger = logging.getLogger(__name__)
 

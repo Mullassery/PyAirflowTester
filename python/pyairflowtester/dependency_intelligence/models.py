@@ -1,9 +1,9 @@
 """Data models for Dependency Intelligence Engine."""
 
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import Dict, List, Set, Optional, Any
 from datetime import datetime
+from enum import Enum
+from typing import Any, Dict, List, Optional, Set
 
 
 class NodeType(Enum):

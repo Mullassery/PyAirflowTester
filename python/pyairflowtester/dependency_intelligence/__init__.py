@@ -1,58 +1,58 @@
 """Dependency Intelligence Engine for PyAirflowTester."""
 
-from .models import (
-    NodeType,
-    NodeSeverity,
-    Node,
-    Edge,
-    DependencyGraph,
-    ImpactResult,
-    BlastRadiusResult,
-    RiskScoreResult,
-    DriftDetectionResult,
-)
-from .graph import DependencyGraphEngine
-from .parsers import (
-    AirflowDAGParser,
-    dbtManifestParser,
-    AirflowDatasetParser,
-    UnifiedGraphBuilder,
+from .analytics import (
+    OwnershipAnalysis,
+    OwnershipAnalyzer,
+    SchemaEvolution,
+    SchemaEvolutionTracker,
+    SLAValidation,
+    SLAValidator,
+    TestCoverageAnalysis,
+    TestCoverageAnalyzer,
 )
 from .analyzers import (
-    ImpactAnalysisEngine,
     BlastRadiusEngine,
-    RiskScoringEngine,
     DriftDetectionEngine,
+    ImpactAnalysisEngine,
+    RiskScoringEngine,
 )
-from .analytics import (
-    OwnershipAnalyzer,
-    SchemaEvolutionTracker,
-    SLAValidator,
-    TestCoverageAnalyzer,
-    OwnershipAnalysis,
-    SchemaEvolution,
-    SLAValidation,
-    TestCoverageAnalysis,
-)
+from .graph import DependencyGraphEngine
 from .intelligence import (
-    FailurePredictionEngine,
-    AnomalyDetector,
-    RecommendationEngine,
-    HealthScoreCalculator,
-    FailurePrediction,
     AnomalyDetection,
-    Recommendation,
+    AnomalyDetector,
+    FailurePrediction,
+    FailurePredictionEngine,
     HealthScore,
+    HealthScoreCalculator,
+    Recommendation,
+    RecommendationEngine,
+)
+from .models import (
+    BlastRadiusResult,
+    DependencyGraph,
+    DriftDetectionResult,
+    Edge,
+    ImpactResult,
+    Node,
+    NodeSeverity,
+    NodeType,
+    RiskScoreResult,
 )
 from .observability import (
-    MetricsCollector,
-    AlertManager,
-    EventLogger,
-    DashboardBuilder,
-    MetricType,
-    Metric,
     Alert,
+    AlertManager,
+    DashboardBuilder,
+    EventLogger,
     ExecutionEvent,
+    Metric,
+    MetricsCollector,
+    MetricType,
+)
+from .parsers import (
+    AirflowDAGParser,
+    AirflowDatasetParser,
+    UnifiedGraphBuilder,
+    dbtManifestParser,
 )
 
 __all__ = [
