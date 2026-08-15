@@ -1,18 +1,15 @@
 """Tests for advanced DAG rules (AFW005-AFW015)."""
 
-import pytest
 from pyairflowtester.rules.dag_advanced import (
-    TaskCountRule,
-    CatchupConfigRule,
-    PoolConfigurationRule,
-    HardcodedConnectionRule,
-    SecretsInCodeRule,
-    RetryConfigurationRule,
-    SensorTimeoutRule,
-    BranchComplexityRule,
-    DocumentationRule,
     AlertingConfigurationRule,
+    CatchupConfigRule,
+    DocumentationRule,
+    HardcodedConnectionRule,
     OperatorDeprecationRule,
+    RetryConfigurationRule,
+    SecretsInCodeRule,
+    SensorTimeoutRule,
+    TaskCountRule,
 )
 
 
@@ -44,7 +41,7 @@ class TestCatchupConfigRule:
         source_code = "dag = DAG('test', catchup=True)"
         violations = rule.evaluate(source_code, "test.py")
         assert len(violations) > 0
-        assert violations[0]["rule_id"] == "AFG006"
+        assert violations[0]["rule_id"] == "AFW006"
 
     def test_safe_catchup(self):
         """Test catchup=True with strategy is safe."""

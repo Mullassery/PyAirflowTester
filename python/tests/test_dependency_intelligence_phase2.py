@@ -1,25 +1,26 @@
 """Tests for intelligence and observability engines (Phases 3-4)."""
 
-import pytest
 from datetime import datetime, timedelta
-from pyairflowtester.dependency_intelligence.models import (
-    Node,
-    Edge,
-    NodeType,
-    NodeSeverity,
-    DependencyGraph,
-)
+
+import pytest
 from pyairflowtester.dependency_intelligence.intelligence import (
-    FailurePredictionEngine,
     AnomalyDetector,
-    RecommendationEngine,
+    FailurePredictionEngine,
     HealthScoreCalculator,
+    RecommendationEngine,
+)
+from pyairflowtester.dependency_intelligence.models import (
+    DependencyGraph,
+    Edge,
+    Node,
+    NodeSeverity,
+    NodeType,
 )
 from pyairflowtester.dependency_intelligence.observability import (
-    MetricsCollector,
     AlertManager,
-    EventLogger,
     DashboardBuilder,
+    EventLogger,
+    MetricsCollector,
     MetricType,
 )
 

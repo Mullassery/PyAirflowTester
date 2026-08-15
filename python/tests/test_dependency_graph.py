@@ -1,15 +1,14 @@
 """Tests for dependency graph engine."""
 
 import pytest
-from pyairflowtester.dependency_intelligence.models import (
-    Node,
-    Edge,
-    NodeType,
-    NodeSeverity,
-    RelationshipType,
-    DependencyGraph,
-)
 from pyairflowtester.dependency_intelligence.graph import DependencyGraphEngine
+from pyairflowtester.dependency_intelligence.models import (
+    DependencyGraph,
+    Edge,
+    Node,
+    NodeSeverity,
+    NodeType,
+)
 
 
 @pytest.fixture

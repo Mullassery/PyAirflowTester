@@ -1,18 +1,18 @@
 """Tests for dependency intelligence analyzers."""
 
 import pytest
-from pyairflowtester.dependency_intelligence.models import (
-    Node,
-    Edge,
-    NodeType,
-    NodeSeverity,
-    DependencyGraph,
-)
 from pyairflowtester.dependency_intelligence.analyzers import (
-    ImpactAnalysisEngine,
     BlastRadiusEngine,
-    RiskScoringEngine,
     DriftDetectionEngine,
+    ImpactAnalysisEngine,
+    RiskScoringEngine,
+)
+from pyairflowtester.dependency_intelligence.models import (
+    DependencyGraph,
+    Edge,
+    Node,
+    NodeSeverity,
+    NodeType,
 )
 
 

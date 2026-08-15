@@ -1,18 +1,18 @@
 """Tests for dependency analytics engines (Phase 2)."""
 
 import pytest
-from pyairflowtester.dependency_intelligence.models import (
-    Node,
-    Edge,
-    NodeType,
-    NodeSeverity,
-    DependencyGraph,
-)
 from pyairflowtester.dependency_intelligence.analytics import (
     OwnershipAnalyzer,
     SchemaEvolutionTracker,
     SLAValidator,
     TestCoverageAnalyzer,
+)
+from pyairflowtester.dependency_intelligence.models import (
+    DependencyGraph,
+    Edge,
+    Node,
+    NodeSeverity,
+    NodeType,
 )
 
 
@@ -210,8 +210,14 @@ class TestSLAValidator:
         assert len(missing) > 0
 
 
-class TestCoverageAnalyzer:
-    """Test test coverage analysis."""
+class TestTestCoverageAnalyzer:
+    """Test suite for the TestCoverageAnalyzer class.
+
+    Named with a doubled "Test" prefix (pytest convention: TestX tests class
+    X) because the class under test is itself named TestCoverageAnalyzer.
+    Using the same name here would rebind/shadow the imported class in this
+    module's namespace (F811), breaking every reference below.
+    """
 
     def test_assign_tests(self, test_graph):
         """Test assigning tests to nodes."""

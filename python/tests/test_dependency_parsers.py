@@ -4,14 +4,13 @@ import json
 import tempfile
 from pathlib import Path
 
-import pytest
+from pyairflowtester.dependency_intelligence.models import NodeType
 from pyairflowtester.dependency_intelligence.parsers import (
     AirflowDAGParser,
-    dbtManifestParser,
     AirflowDatasetParser,
     UnifiedGraphBuilder,
+    dbtManifestParser,
 )
-from pyairflowtester.dependency_intelligence.models import NodeType
 
 
 class TestAirflowDAGParser:
@@ -37,6 +36,22 @@ task_1 >> task_2
         assert dag_id == "simple_dag"
         assert "task_1" in task_ids
         assert "task_2" in task_ids
+
+    def test_parse_dag_id_from_keyword_argument(self):
+        """dag_id passed as a keyword must still be extracted (DAG(dag_id='x'))."""
+        dag_id, _, _ = AirflowDAGParser.parse_dag_code(
+            "dag = DAG(dag_id='keyword_dag', start_date=datetime(2024, 1, 1))"
+        )
+        assert dag_id == "keyword_dag"
+
+    def test_parse_dag_id_from_positional_argument(self):
+        """Regression test: dag_id passed positionally (the idiomatic
+        DAG('my_dag', start_date=...) form) previously returned None because
+        only the dag_id keyword argument was checked."""
+        dag_id, _, _ = AirflowDAGParser.parse_dag_code(
+            "dag = DAG('simple_dag', start_date=datetime(2024,1,1))"
+        )
+        assert dag_id == "simple_dag"
 
     def test_parse_dag_with_dependencies(self):
         """Test parsing DAG with task dependencies."""
