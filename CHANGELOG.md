@@ -2,6 +2,73 @@
 
 All notable changes to PyAirflowTester are documented in this file.
 
+## [0.3.0] - 2026-08-15
+
+### First public PyPI release, and a correctness pass on the primary `scan` workflow
+
+This release fixes the primary advertised workflow (`pyairflowtester scan`), which was
+completely broken: the very first DAG rule that ran (`CircularDependencyRule`) crashed with
+`re.error: invalid group reference 1` on every invocation, and that exception was caught by
+a single try/except wrapped around the *entire* per-file rule loop, silently discarding every
+other rule's findings for that file too — including the security-critical secrets-detection
+rule. Additionally, most of the rule catalog the CLI's `rules` subcommand advertised was
+never actually wired into `scan` at all.
+
+### Fixed
+
+- `CircularDependencyRule` (AFW001): replaced the broken backreference regex with real
+  graph-cycle detection over parsed `>>`/`<<`/`set_upstream`/`set_downstream` edges.
+- `Scanner.scan_dags`/`scan_dbt`/`scan_config`: exception handling is now isolated per rule
+  instead of per file, with a clear warning logged when a rule fails, so one bad rule can no
+  longer suppress every other rule's findings.
+- Wired the 11 previously-unwired `dag_advanced.py` rules (AFW005-AFW015, including
+  `SecretsInCodeRule` and `HardcodedConnectionRule`) and all 15 `config.py` rules
+  (CFG001-CFG015, via a new `Scanner.scan_config()` / `--airflow-cfg` scan option) into the
+  actual scan path.
+- Resolved a naming collision: two unrelated classes were both named
+  `PoolConfigurationRule` and silently shadowed each other on import. Renamed to
+  `SourceCodePoolConfigurationRule` (AFW007) and `AirflowCfgPoolConfigurationRule` (CFG002).
+- `AirflowDAGParser.parse_dag_code`: now extracts `dag_id` from the idiomatic positional
+  form `DAG('my_dag', ...)`, not just the `dag_id=` keyword form.
+- `UntestedModelRule` (DBT003): derives real test counts from the manifest's `test.*` nodes
+  instead of a `test_dependencies` field that dbt's manifest schema doesn't actually have.
+- `Analyzer` (runtime correlation against live Airflow/dbt): every method now raises
+  `AnalyzerNotImplementedError` with a clear explanation instead of silently returning an
+  empty list that could be mistaken for "analyzed, found nothing." This subsystem needs a
+  live Airflow/dbt instance to build and validate against, which isn't available yet.
+- `pyairflowtester dependency ...` commands (build/impact/lineage/blast-radius/detect-cycles/
+  detect-orphans/risk-score): the command group existed and was tested at the unit level but
+  was never actually attached to the main CLI, so none of these commands worked. Wired in,
+  plus fixed a JSON-serialization bug in `dependency build --output` (enum dict keys aren't
+  JSON-serializable).
+- Two test bugs: a pytest test class shadowing the real `TestCoverageAnalyzer` it was
+  testing (renamed to `TestTestCoverageAnalyzer`), and an assertion checking for the typo'd
+  rule ID `AFG006` instead of `AFW006`.
+- `pyproject.toml`'s `testpaths` pointed at the (mostly empty) Rust `tests/` directory
+  instead of `python/tests/`, so a bare `pytest` from repo root silently ran almost nothing.
+
+### Changed
+
+- Build backend switched from `maturin` (PyO3/Rust) to `hatchling` (pure Python). The CLI
+  never used the Rust extension (`pyairflowtester._core` import already had an `ImportError`
+  fallback) so shipping it as a compiled extension added a Rust toolchain requirement for no
+  functional benefit. The Rust crate (`src/*.rs`) still exists in the repo as a separate,
+  unwired implementation.
+- Removed unused runtime dependencies: `sqlalchemy`, `psycopg2-binary`, `pydantic`,
+  `jinja2`, `python-dateutil`, `pyyaml`, and all `opentelemetry-*` packages — zero references
+  to any of them anywhere in `python/pyairflowtester`. Only `click` and `rich` are actually
+  used at runtime.
+- README rewritten to describe what actually works today, what's explicitly unimplemented
+  (`Analyzer`), and the real architecture (pure-Python CLI is the supported path; the Rust
+  core is a separate, unwired experiment).
+- `ruff check --fix` applied for import-hygiene/ordering issues.
+
+### Added
+
+- 22 new regression tests locking in the fixes above (circular-dependency graph detection,
+  full rule-catalog wiring, per-rule exception isolation, config boolean coercion, positional
+  `dag_id` parsing).
+
 ## [0.1.0] - 2024-08-02
 
 ### Complete System Release
