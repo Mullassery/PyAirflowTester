@@ -2,6 +2,23 @@
 
 All notable changes to PyAirflowTester are documented in this file.
 
+## [0.3.1] - 2026-08-23
+
+### Real fix: dependency-intelligence health/risk scoring no longer hardcoded
+
+`FailurePredictionEngine.predict_node_failure` and
+`HealthScoreCalculator._calculate_test_score` (in
+`dependency_intelligence/intelligence.py`) previously ignored the actual
+graph and returned fake, hardcoded test-coverage figures regardless of
+input (`test_count = 0` always; a fixed `10.0` score always). Both now
+consult the real `TestCoverageAnalyzer` already used correctly elsewhere
+in the module, so failure predictions and health scores actually reflect
+each node's real test coverage.
+
+Also fixed several CI-only issues (Rust clippy/lint debt in the optional
+`_core` extension, a broken security-scan action, an unguarded
+integration-test job) that don't affect the shipped pure-Python package.
+
 ## [0.3.0] - 2026-08-15
 
 ### First public PyPI release, and a correctness pass on the primary `scan` workflow
