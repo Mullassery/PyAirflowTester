@@ -1,4 +1,4 @@
-use serde_json::{json, Value};
+use serde_json::Value;
 use std::fs;
 use std::path::Path;
 use thiserror::Error;
@@ -204,15 +204,15 @@ impl DbtParser {
 
         // Determine model name from attached_node or first depend_on
         let model_name = if let Some(attached) = node.get("attached_node").and_then(|a| a.as_str()) {
-            attached.split('.').last().unwrap_or("unknown").to_string()
+            attached.split('.').next_back().unwrap_or("unknown").to_string()
         } else if let Some(depends_on) = node
             .get("depends_on")
             .and_then(|d| d.get("nodes"))
             .and_then(|n| n.as_array())
-            .and_then(|mut a| a.first())
+            .and_then(|a| a.first())
             .and_then(|f| f.as_str())
         {
-            depends_on.split('.').last().unwrap_or("unknown").to_string()
+            depends_on.split('.').next_back().unwrap_or("unknown").to_string()
         } else {
             "unknown".to_string()
         };

@@ -1,5 +1,5 @@
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use regex::Regex;
 use thiserror::Error;
 
@@ -105,7 +105,7 @@ impl DagParser {
             let entry = entry?;
             let path = entry.path();
 
-            if path.is_file() && path.extension().map_or(false, |ext| ext == "py") {
+            if path.is_file() && path.extension().is_some_and(|ext| ext == "py") {
                 if let Ok(dag) = self.parse_file(&path) {
                     dags.push(dag);
                 }

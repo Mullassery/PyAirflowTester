@@ -1,3 +1,11 @@
+// pyo3 0.20's #[pymethods] macro expands to an `impl` block that trips the
+// `non_local_definitions` lint on newer (beta/future-stable) rustc -- the
+// lint's own diagnostic says as much ("may come from an old version of the
+// pyo3_macros crate"). It's generated code we don't control, not a real
+// issue in this crate's own code; a pyo3 major-version bump would fix it
+// properly but is a larger, separate migration. Suppress it here.
+#![allow(non_local_definitions)]
+
 use pyo3::prelude::*;
 use std::collections::HashMap;
 use std::path::Path;
@@ -7,7 +15,7 @@ pub mod dag_parser;
 pub mod dbt_parser;
 pub mod scoring;
 
-use rule_engine::{Rule, RuleViolation, RuleContext, Severity, Category, ExecutionMode, RuleEngine};
+use rule_engine::{RuleViolation, Severity, RuleEngine};
 use dag_parser::{DagParser, DagDefinition};
 use dbt_parser::{DbtParser, DbtProject, DbtModel, DbtTest};
 use scoring::Scorer;
@@ -651,7 +659,7 @@ impl PyScorer {
     }
 
     fn calculate_priority_score(&self, rule_id: &str, severity_str: &str) -> PyResult<f64> {
-        let severity = Severity::from_str(severity_str).unwrap_or(Severity::Info);
+        let severity = Severity::from_str_name(severity_str).unwrap_or(Severity::Info);
         let violation = RuleViolation::new(
             rule_id.to_string(),
             severity,

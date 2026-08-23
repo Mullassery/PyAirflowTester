@@ -1,4 +1,4 @@
-use crate::rule_engine::{RuleViolation, Severity};
+use crate::rule_engine::RuleViolation;
 use std::collections::HashMap;
 
 /// Scoring calculation engine
@@ -101,7 +101,7 @@ impl Scorer {
         maintainability: f64,
     ) -> f64 {
         // Weighted average: reliability 50%, performance 30%, maintainability 20%
-        (reliability * 0.5 + performance * 0.3 + maintainability * 0.2).min(100.0).max(0.0)
+        (reliability * 0.5 + performance * 0.3 + maintainability * 0.2).clamp(0.0, 100.0)
     }
 
     /// Categorize risk level
@@ -188,6 +188,7 @@ impl RiskScorecard {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::rule_engine::Severity;
 
     fn create_test_violation(severity: &str) -> RuleViolation {
         let severity = match severity {

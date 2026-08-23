@@ -9,6 +9,12 @@ pub struct RuleContext {
     pub metadata: HashMap<String, String>,
 }
 
+impl Default for RuleContext {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RuleContext {
     pub fn new() -> Self {
         RuleContext {
@@ -52,7 +58,7 @@ impl Severity {
         }
     }
 
-    pub fn from_str(s: &str) -> Option<Self> {
+    pub fn from_str_name(s: &str) -> Option<Self> {
         match s {
             "critical" => Some(Severity::Critical),
             "high" => Some(Severity::High),
