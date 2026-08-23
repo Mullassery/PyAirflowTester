@@ -117,7 +117,13 @@ impl DagParser {
 
     /// Extract DAG ID from source code
     fn extract_dag_id(&self, source: &str) -> Option<String> {
-        let re = Regex::new(r#"dag_id\s*=\s*["\']([^"\']+)["\']\s*[,)]"#).ok()?;
+        // No longer requires a trailing `,`/`)` after the closing quote --
+        // that made this only match `dag_id` used as a call keyword
+        // argument (e.g. `DAG(dag_id="x", ...)`), not a plain assignment
+        // statement (`dag_id = "x"`), which is equally valid Python and is
+        // what a bare-string-literal closing quote followed by anything
+        // else (newline, EOF, another statement) looks like.
+        let re = Regex::new(r#"dag_id\s*=\s*["\']([^"\']+)["\']"#).ok()?;
         re.captures(source)
             .and_then(|cap| cap.get(1))
             .map(|m| m.as_str().to_string())

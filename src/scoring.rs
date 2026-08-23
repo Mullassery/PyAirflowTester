@@ -190,9 +190,17 @@ mod tests {
     use super::*;
 
     fn create_test_violation(severity: &str) -> RuleViolation {
+        let severity = match severity {
+            "critical" => Severity::Critical,
+            "high" => Severity::High,
+            "medium" => Severity::Medium,
+            "low" => Severity::Low,
+            "info" => Severity::Info,
+            other => panic!("unknown severity in test helper: {other}"),
+        };
         RuleViolation::new(
             "TEST001".to_string(),
-            Severity::Medium,
+            severity,
             "test_resource".to_string(),
             "Test violation".to_string(),
             "Fix test".to_string(),
