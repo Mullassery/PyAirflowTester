@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 class MetricType(Enum):
     """Types of metrics to track."""
+
     EXECUTION_TIME = "execution_time"
     FAILURE_COUNT = "failure_count"
     DATA_VOLUME = "data_volume"
@@ -24,6 +25,7 @@ class MetricType(Enum):
 @dataclass
 class Metric:
     """Individual metric observation."""
+
     metric_type: MetricType
     node_id: str
     value: float
@@ -34,6 +36,7 @@ class Metric:
 @dataclass
 class Alert:
     """Alert for detected issues."""
+
     alert_id: str
     alert_type: str  # threshold_exceeded, anomaly_detected, sla_violated
     node_id: str
@@ -48,6 +51,7 @@ class Alert:
 @dataclass
 class ExecutionEvent:
     """Record of node execution."""
+
     event_id: str
     node_id: str
     status: str  # success, failure, timeout
@@ -65,8 +69,9 @@ class MetricsCollector:
         self.metrics: List[Metric] = []
         self.retention_days = 30
 
-    def record_metric(self, metric_type: MetricType, node_id: str,
-                     value: float, tags: Dict[str, str] = None) -> Metric:
+    def record_metric(
+        self, metric_type: MetricType, node_id: str, value: float, tags: Dict[str, str] = None
+    ) -> Metric:
         """Record a metric observation."""
         metric = Metric(
             metric_type=metric_type,
@@ -78,21 +83,23 @@ class MetricsCollector:
         self.metrics.append(metric)
         return metric
 
-    def get_metrics_for_node(self, node_id: str,
-                            metric_type: Optional[MetricType] = None,
-                            hours: int = 24) -> List[Metric]:
+    def get_metrics_for_node(
+        self, node_id: str, metric_type: Optional[MetricType] = None, hours: int = 24
+    ) -> List[Metric]:
         """Get recent metrics for a node."""
         cutoff = datetime.utcnow() - timedelta(hours=hours)
 
         return [
-            m for m in self.metrics
+            m
+            for m in self.metrics
             if m.node_id == node_id
             and m.timestamp >= cutoff
             and (metric_type is None or m.metric_type == metric_type)
         ]
 
-    def calculate_statistics(self, node_id: str, metric_type: MetricType,
-                            hours: int = 24) -> Dict[str, float]:
+    def calculate_statistics(
+        self, node_id: str, metric_type: MetricType, hours: int = 24
+    ) -> Dict[str, float]:
         """Calculate statistics for a metric."""
         metrics = self.get_metrics_for_node(node_id, metric_type, hours)
 
@@ -135,8 +142,9 @@ class AlertManager:
         self.alerts: List[Alert] = []
         self.thresholds: Dict[str, Dict[str, float]] = {}
 
-    def set_threshold(self, node_id: str, metric_type: str,
-                     warning: float, critical: float) -> None:
+    def set_threshold(
+        self, node_id: str, metric_type: str, warning: float, critical: float
+    ) -> None:
         """Set threshold for a metric."""
         if node_id not in self.thresholds:
             self.thresholds[node_id] = {}
@@ -146,8 +154,7 @@ class AlertManager:
             "critical": critical,
         }
 
-    def check_threshold(self, node_id: str, metric_type: str,
-                       value: float) -> Optional[Alert]:
+    def check_threshold(self, node_id: str, metric_type: str, value: float) -> Optional[Alert]:
         """Check if metric exceeds threshold."""
         if node_id not in self.thresholds:
             return None
@@ -213,10 +220,16 @@ class EventLogger:
         self.events: List[ExecutionEvent] = []
         self.retention_days = 90
 
-    def log_execution(self, node_id: str, status: str, duration_ms: int,
-                     start_time: datetime, end_time: datetime,
-                     error_message: Optional[str] = None,
-                     tags: Dict[str, str] = None) -> ExecutionEvent:
+    def log_execution(
+        self,
+        node_id: str,
+        status: str,
+        duration_ms: int,
+        start_time: datetime,
+        end_time: datetime,
+        error_message: Optional[str] = None,
+        tags: Dict[str, str] = None,
+    ) -> ExecutionEvent:
         """Log a node execution event."""
         event = ExecutionEvent(
             event_id=f"{node_id}_{start_time.timestamp()}",
@@ -234,10 +247,7 @@ class EventLogger:
     def get_events_for_node(self, node_id: str, hours: int = 24) -> List[ExecutionEvent]:
         """Get recent events for a node."""
         cutoff = datetime.utcnow() - timedelta(hours=hours)
-        return [
-            e for e in self.events
-            if e.node_id == node_id and e.start_time >= cutoff
-        ]
+        return [e for e in self.events if e.node_id == node_id and e.start_time >= cutoff]
 
     def get_failure_rate(self, node_id: str, hours: int = 24) -> float:
         """Calculate failure rate for a node."""
@@ -278,8 +288,8 @@ class EventLogger:
         events_dict = []
         for e in events:
             d = asdict(e)
-            d['start_time'] = e.start_time.isoformat()
-            d['end_time'] = e.end_time.isoformat()
+            d["start_time"] = e.start_time.isoformat()
+            d["end_time"] = e.end_time.isoformat()
             events_dict.append(d)
 
         return json.dumps(events_dict, indent=2)
@@ -288,8 +298,13 @@ class EventLogger:
 class DashboardBuilder:
     """Build observability dashboards."""
 
-    def __init__(self, graph: DependencyGraph, metrics_collector: MetricsCollector,
-                 alert_manager: AlertManager, event_logger: EventLogger):
+    def __init__(
+        self,
+        graph: DependencyGraph,
+        metrics_collector: MetricsCollector,
+        alert_manager: AlertManager,
+        event_logger: EventLogger,
+    ):
         self.graph = graph
         self.metrics = metrics_collector
         self.alerts = alert_manager
@@ -305,9 +320,7 @@ class DashboardBuilder:
         execution_times = self.metrics.get_metrics_for_node(
             node_id, MetricType.EXECUTION_TIME, hours=24
         )
-        exec_stats = self.metrics.calculate_statistics(
-            node_id, MetricType.EXECUTION_TIME, hours=24
-        )
+        exec_stats = self.metrics.calculate_statistics(node_id, MetricType.EXECUTION_TIME, hours=24)
 
         # Get events
         events = self.events.get_events_for_node(node_id, hours=24)
@@ -339,7 +352,9 @@ class DashboardBuilder:
                 },
                 "alerts": {
                     "active_count": len(active_alerts),
-                    "critical": len([a for a in active_alerts if a.severity == NodeSeverity.CRITICAL]),
+                    "critical": len(
+                        [a for a in active_alerts if a.severity == NodeSeverity.CRITICAL]
+                    ),
                     "high": len([a for a in active_alerts if a.severity == NodeSeverity.HIGH]),
                 },
                 "recent_events": [

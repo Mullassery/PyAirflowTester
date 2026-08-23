@@ -19,6 +19,7 @@ SEVERITY_WEIGHTS = {
 @dataclass
 class Rule:
     """Rule definition."""
+
     id: str
     name: str
     severity: str
@@ -32,6 +33,7 @@ class Rule:
 @dataclass
 class RuleViolation:
     """Rule violation result."""
+
     rule_id: str
     severity: str
     affected_resource: str
@@ -56,6 +58,7 @@ class RuleViolation:
 @dataclass
 class DagDefinition:
     """Airflow DAG definition."""
+
     dag_id: str
     file_path: str
     source_code: str
@@ -72,6 +75,7 @@ class DagDefinition:
 @dataclass
 class DbtModel:
     """dbt model definition."""
+
     name: str
     materialization: str = "table"
     description: str = ""
@@ -85,6 +89,7 @@ class DbtModel:
 @dataclass
 class DbtTest:
     """dbt test definition."""
+
     name: str
     test_type: str
     model_name: str
@@ -96,6 +101,7 @@ class DbtTest:
 @dataclass
 class RiskScorecard:
     """Risk scorecard for a resource."""
+
     resource_id: str
     resource_type: str
     timestamp: datetime = field(default_factory=datetime.utcnow)
@@ -126,6 +132,7 @@ class RiskScorecard:
 @dataclass
 class AnalysisContext:
     """Context for analysis."""
+
     dag_id: Optional[str] = None
     task_id: Optional[str] = None
     model_name: Optional[str] = None

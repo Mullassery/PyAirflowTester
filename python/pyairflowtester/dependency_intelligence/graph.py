@@ -234,7 +234,7 @@ class DependencyGraphEngine:
             Dict with 'sources' (no incoming) and 'sinks' (no outgoing)
         """
         sources = []  # No incoming edges
-        sinks = []    # No outgoing edges
+        sinks = []  # No outgoing edges
 
         for node_id, node in self.graph.nodes.items():
             has_incoming = any(e.target == node_id for e in self.graph.edges)
@@ -403,8 +403,15 @@ class DependencyGraphEngine:
             "orphaned_sources": len(orphans["sources"]),
             "orphaned_sinks": len(orphans["sinks"]),
             "orphaned_isolated": len(orphans["isolated"]),
-            "average_degree": sum(len(self.get_upstream_nodes(n)) + len(self.get_downstream_nodes(n))
-                                 for n in self.graph.nodes) / len(self.graph.nodes) if self.graph.nodes else 0,
+            "average_degree": (
+                sum(
+                    len(self.get_upstream_nodes(n)) + len(self.get_downstream_nodes(n))
+                    for n in self.graph.nodes
+                )
+                / len(self.graph.nodes)
+                if self.graph.nodes
+                else 0
+            ),
             "avg_centrality": sum(centrality.values()) / len(centrality) if centrality else 0,
             "max_centrality": max(centrality.values()) if centrality else 0,
             "node_types": self.graph.get_node_count_by_type(),

@@ -67,10 +67,16 @@ class ReportGenerator:
     <title>PyAirflowTester Report</title>
     <style>
         body {{ font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }}
-        .container {{ max-width: 1000px; margin: 0 auto; background-color: white; padding: 20px; border-radius: 8px; }}
+        .container {{
+            max-width: 1000px; margin: 0 auto; background-color: white;
+            padding: 20px; border-radius: 8px;
+        }}
         h1 {{ color: #333; }}
         .summary {{ background-color: #e8f4f8; padding: 15px; border-radius: 5px; margin: 20px 0; }}
-        .violation {{ border-left: 4px solid #dc3545; padding: 15px; margin: 10px 0; background-color: #f8f9fa; }}
+        .violation {{
+            border-left: 4px solid #dc3545; padding: 15px; margin: 10px 0;
+            background-color: #f8f9fa;
+        }}
         .critical {{ border-left-color: #dc3545; }}
         .high {{ border-left-color: #fd7e14; }}
         .medium {{ border-left-color: #ffc107; }}
@@ -146,7 +152,11 @@ Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 """
 
         for v in violations:
-            md += f"| {v.get('rule_id', '')} | {v.get('severity', 'info')} | {v.get('affected_resource', '')} | {v.get('message', '')} |\n"
+            rule_id = v.get("rule_id", "")
+            severity = v.get("severity", "info")
+            resource = v.get("affected_resource", "")
+            message = v.get("message", "")
+            md += f"| {rule_id} | {severity} | {resource} | {message} |\n"
 
         with open(output_path, "w") as f:
             f.write(md)

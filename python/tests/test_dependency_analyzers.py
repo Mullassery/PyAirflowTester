@@ -24,28 +24,42 @@ def test_graph():
     # Create nodes with varying severity
     nodes = {
         "critical_dag": Node(
-            "critical_dag", "Critical DAG", NodeType.DAG,
-            severity=NodeSeverity.CRITICAL, owner="team_a"
+            "critical_dag",
+            "Critical DAG",
+            NodeType.DAG,
+            severity=NodeSeverity.CRITICAL,
+            owner="team_a",
         ),
         "high_model": Node(
-            "high_model", "High Model", NodeType.DBT_MODEL,
-            severity=NodeSeverity.HIGH, owner="team_a"
+            "high_model",
+            "High Model",
+            NodeType.DBT_MODEL,
+            severity=NodeSeverity.HIGH,
+            owner="team_a",
         ),
         "medium_task": Node(
-            "medium_task", "Medium Task", NodeType.TASK,
-            severity=NodeSeverity.MEDIUM, owner="team_b"
+            "medium_task",
+            "Medium Task",
+            NodeType.TASK,
+            severity=NodeSeverity.MEDIUM,
+            owner="team_b",
         ),
         "low_task": Node(
-            "low_task", "Low Task", NodeType.TASK,
-            severity=NodeSeverity.LOW, owner="team_b"
+            "low_task", "Low Task", NodeType.TASK, severity=NodeSeverity.LOW, owner="team_b"
         ),
         "downstream_1": Node(
-            "downstream_1", "Downstream 1", NodeType.DBT_MODEL,
-            severity=NodeSeverity.HIGH, owner="team_c"
+            "downstream_1",
+            "Downstream 1",
+            NodeType.DBT_MODEL,
+            severity=NodeSeverity.HIGH,
+            owner="team_c",
         ),
         "downstream_2": Node(
-            "downstream_2", "Downstream 2", NodeType.TASK,
-            severity=NodeSeverity.MEDIUM, owner="team_c"
+            "downstream_2",
+            "Downstream 2",
+            NodeType.TASK,
+            severity=NodeSeverity.MEDIUM,
+            owner="team_c",
         ),
     }
 
@@ -168,8 +182,12 @@ class TestRiskScoring:
 
         assert 0.0 <= result.risk_score <= 10.0
         assert result.node_id == "high_model"
-        assert result.severity in [NodeSeverity.CRITICAL, NodeSeverity.HIGH,
-                                   NodeSeverity.MEDIUM, NodeSeverity.LOW]
+        assert result.severity in [
+            NodeSeverity.CRITICAL,
+            NodeSeverity.HIGH,
+            NodeSeverity.MEDIUM,
+            NodeSeverity.LOW,
+        ]
 
     def test_score_components(self, test_graph):
         """Test that score has components breakdown."""
@@ -244,10 +262,10 @@ class TestDriftDetection:
         """Test detection of removed nodes."""
         # Create modified graph without a node
         modified_graph = DependencyGraph()
-        modified_graph.nodes = {k: v for k, v in test_graph.nodes.items()
-                               if k != "low_task"}
-        modified_graph.edges = [e for e in test_graph.edges
-                               if e.source != "low_task" and e.target != "low_task"]
+        modified_graph.nodes = {k: v for k, v in test_graph.nodes.items() if k != "low_task"}
+        modified_graph.edges = [
+            e for e in test_graph.edges if e.source != "low_task" and e.target != "low_task"
+        ]
 
         engine = DriftDetectionEngine(modified_graph, test_graph)
         result = engine.detect_drift()
@@ -276,8 +294,11 @@ class TestDriftDetection:
         # Create graph with removed critical edge
         modified_graph = DependencyGraph()
         modified_graph.nodes = test_graph.nodes.copy()
-        modified_graph.edges = [e for e in test_graph.edges
-                               if not (e.source == "critical_dag" and e.target == "high_model")]
+        modified_graph.edges = [
+            e
+            for e in test_graph.edges
+            if not (e.source == "critical_dag" and e.target == "high_model")
+        ]
 
         engine = DriftDetectionEngine(modified_graph, test_graph)
         result = engine.detect_drift()
@@ -328,8 +349,7 @@ class TestAnalyzerIntegration:
 
         # Score the affected nodes
         scores = {
-            node_id: risk_engine.score_node(node_id)
-            for node_id in blast_result.affected_nodes[:5]
+            node_id: risk_engine.score_node(node_id) for node_id in blast_result.affected_nodes[:5]
         }
 
         assert all(0.0 <= s.risk_score <= 10.0 for s in scores.values())

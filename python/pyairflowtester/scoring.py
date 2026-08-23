@@ -28,8 +28,7 @@ class Scorer:
             return 100.0
 
         total_severity = sum(
-            self.severity_weights.get(v.get("severity", "info"), 0)
-            for v in violations
+            self.severity_weights.get(v.get("severity", "info"), 0) for v in violations
         )
 
         avg_severity = total_severity / len(violations)
@@ -102,7 +101,7 @@ class Scorer:
             Health score (0-100)
         """
         # Weighted average: reliability 50%, performance 30%, maintainability 20%
-        score = (reliability * 0.5 + performance * 0.3 + maintainability * 0.2)
+        score = reliability * 0.5 + performance * 0.3 + maintainability * 0.2
         return min(max(score, 0.0), 100.0)
 
     def calculate_trend(self, current_score: float, previous_score: float) -> str:
@@ -142,6 +141,7 @@ class Scorer:
         min_weight = self.severity_weights.get(min_severity, 0)
 
         return [
-            v for v in violations
+            v
+            for v in violations
             if self.severity_weights.get(v.get("severity", "info"), 0) >= min_weight
         ]

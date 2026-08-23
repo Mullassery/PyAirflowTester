@@ -68,34 +68,35 @@ def build(dags: Optional[str], dbt_manifest: Optional[str], datasets: Optional[s
     json_safe_stats = dict(stats)
     if "node_types" in json_safe_stats:
         json_safe_stats["node_types"] = {
-            node_type.value: count
-            for node_type, count in json_safe_stats["node_types"].items()
+            node_type.value: count for node_type, count in json_safe_stats["node_types"].items()
         }
 
-    output.write(json.dumps(
-        {
-            "nodes": {
-                k: {
-                    "id": v.id,
-                    "name": v.name,
-                    "type": v.type.value,
-                    "owner": v.owner,
-                    "severity": v.severity.value,
-                }
-                for k, v in graph.nodes.items()
+    output.write(
+        json.dumps(
+            {
+                "nodes": {
+                    k: {
+                        "id": v.id,
+                        "name": v.name,
+                        "type": v.type.value,
+                        "owner": v.owner,
+                        "severity": v.severity.value,
+                    }
+                    for k, v in graph.nodes.items()
+                },
+                "edges": [
+                    {
+                        "source": e.source,
+                        "target": e.target,
+                        "relationship_type": e.relationship_type.value,
+                    }
+                    for e in graph.edges
+                ],
+                "stats": json_safe_stats,
             },
-            "edges": [
-                {
-                    "source": e.source,
-                    "target": e.target,
-                    "relationship_type": e.relationship_type.value,
-                }
-                for e in graph.edges
-            ],
-            "stats": json_safe_stats,
-        },
-        indent=2,
-    ))
+            indent=2,
+        )
+    )
 
 
 @dependency_cli.command()
@@ -134,7 +135,13 @@ def impact(node_id: str, depth: Optional[int], dags: Optional[str], dbt_manifest
     # Show affected nodes by severity
     if result.by_severity:
         console.print("\n[bold]By Severity:[/bold]")
-        for severity in [NodeSeverity.CRITICAL, NodeSeverity.HIGH, NodeSeverity.MEDIUM, NodeSeverity.LOW]:
+        severities = [
+            NodeSeverity.CRITICAL,
+            NodeSeverity.HIGH,
+            NodeSeverity.MEDIUM,
+            NodeSeverity.LOW,
+        ]
+        for severity in severities:
             nodes = result.by_severity.get(severity, [])
             if nodes:
                 console.print(f"  {severity.value.upper()}: {len(nodes)}")
@@ -221,8 +228,9 @@ def blast_radius(nodes: tuple, dags: Optional[str], dbt_manifest: Optional[str])
     # Show severity distribution
     if result.severity_distribution:
         console.print("\n[bold]Severity Distribution:[/bold]")
-        for severity, count in sorted(result.severity_distribution.items(),
-                                     key=lambda x: x[0].value, reverse=True):
+        for severity, count in sorted(
+            result.severity_distribution.items(), key=lambda x: x[0].value, reverse=True
+        ):
             console.print(f"  {severity.value.upper()}: {count}")
 
 
@@ -259,7 +267,7 @@ def detect_cycles(dags: Optional[str], dbt_manifest: Optional[str]):
         table.add_column("Path", style="magenta")
 
         for i, cycle in enumerate(cycles, 1):
-            path_str = " → ".join([graph.nodes.get(n, None).name if graph.nodes.get(n) else n for n in cycle[:5]])
+            path_str = " → ".join(graph.nodes[n].name if n in graph.nodes else n for n in cycle[:5])
             if len(cycle) > 5:
                 path_str += f" ... (+{len(cycle) - 5} more)"
             table.add_row(str(i), path_str)

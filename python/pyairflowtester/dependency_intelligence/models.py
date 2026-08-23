@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, Set
 
 class NodeType(Enum):
     """Types of nodes in dependency graph."""
+
     DAG = "dag"
     TASK = "task"
     TASK_GROUP = "task_group"
@@ -24,6 +25,7 @@ class NodeType(Enum):
 
 class NodeSeverity(Enum):
     """Severity levels for nodes."""
+
     CRITICAL = "critical"
     HIGH = "high"
     MEDIUM = "medium"
@@ -32,6 +34,7 @@ class NodeSeverity(Enum):
 
 class RelationshipType(Enum):
     """Types of edges/relationships."""
+
     DEPENDS_ON = "depends_on"
     TRIGGERS = "triggers"
     DATASET_CONSUMER = "dataset_consumer"
@@ -44,6 +47,7 @@ class RelationshipType(Enum):
 @dataclass
 class Node:
     """Represents a node in the dependency graph."""
+
     id: str
     name: str
     type: NodeType
@@ -72,6 +76,7 @@ class Node:
 @dataclass
 class Edge:
     """Represents an edge/relationship between nodes."""
+
     source: str
     target: str
     relationship_type: RelationshipType = RelationshipType.DEPENDS_ON
@@ -85,14 +90,17 @@ class Edge:
     def __eq__(self, other):
         if not isinstance(other, Edge):
             return False
-        return (self.source == other.source and
-                self.target == other.target and
-                self.relationship_type == other.relationship_type)
+        return (
+            self.source == other.source
+            and self.target == other.target
+            and self.relationship_type == other.relationship_type
+        )
 
 
 @dataclass
 class DependencyGraph:
     """Represents complete dependency graph."""
+
     nodes: Dict[str, Node] = field(default_factory=dict)
     edges: List[Edge] = field(default_factory=list)
     version: str = "1.0.0"
@@ -141,8 +149,7 @@ class DependencyGraph:
 
     def get_critical_nodes(self) -> List[Node]:
         """Get all critical severity nodes."""
-        return [n for n in self.nodes.values()
-                if n.severity == NodeSeverity.CRITICAL]
+        return [n for n in self.nodes.values() if n.severity == NodeSeverity.CRITICAL]
 
     def stats(self) -> Dict[str, Any]:
         """Get graph statistics."""
@@ -159,9 +166,11 @@ class DependencyGraph:
 
 # Analysis result dataclasses
 
+
 @dataclass
 class ImpactResult:
     """Result of impact analysis."""
+
     node_id: str
     impacted_nodes: List[str]
     impact_depth: int
@@ -174,6 +183,7 @@ class ImpactResult:
 @dataclass
 class BlastRadiusResult:
     """Result of blast radius analysis."""
+
     change_nodes: List[str]
     affected_nodes: List[str]
     blast_radius: int  # Number of affected nodes
@@ -187,6 +197,7 @@ class BlastRadiusResult:
 @dataclass
 class RiskScoreResult:
     """Result of risk scoring."""
+
     node_id: str
     risk_score: float  # 0.0-10.0
     components: Dict[str, float] = field(default_factory=dict)
@@ -198,6 +209,7 @@ class RiskScoreResult:
 @dataclass
 class DriftDetectionResult:
     """Result of drift detection analysis."""
+
     detected_drifts: List[Dict[str, Any]] = field(default_factory=list)
     drift_count: int = 0
     affected_nodes: List[str] = field(default_factory=list)

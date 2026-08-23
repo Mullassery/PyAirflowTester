@@ -19,7 +19,9 @@ class TestTaskCountRule:
     def test_high_task_count(self):
         """Test detection of DAGs with >500 tasks."""
         rule = TaskCountRule()
-        source_code = "\n".join([f"task_{i} = PythonOperator(task_id='task_{i}')" for i in range(600)])
+        source_code = "\n".join(
+            f"task_{i} = PythonOperator(task_id='task_{i}')" for i in range(600)
+        )
         violations = rule.evaluate(source_code, "test.py")
         assert len(violations) > 0
         assert violations[0]["rule_id"] == "AFW005"
@@ -27,7 +29,7 @@ class TestTaskCountRule:
     def test_normal_task_count(self):
         """Test normal task count doesn't trigger."""
         rule = TaskCountRule()
-        source_code = "\n".join([f"task_{i} = PythonOperator(task_id='task_{i}')" for i in range(50)])
+        source_code = "\n".join(f"task_{i} = PythonOperator(task_id='task_{i}')" for i in range(50))
         violations = rule.evaluate(source_code, "test.py")
         assert len(violations) == 0
 

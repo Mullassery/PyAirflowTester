@@ -97,7 +97,7 @@ dag = DAG('file_dag', start_date=datetime(2024, 1, 1))
 task = PythonOperator(task_id='file_task', python_callable=lambda: None)
 """
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write(dag_code)
             f.flush()
 
@@ -196,7 +196,7 @@ class TestdbtManifestParser:
             "metadata": {},
         }
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(manifest, f)
             f.flush()
 
@@ -229,7 +229,7 @@ class TestdbtManifestParser:
             "metadata": {},
         }
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(manifest, f)
             f.flush()
 
@@ -262,7 +262,7 @@ class TestdbtManifestParser:
             "metadata": {},
         }
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(manifest, f)
             f.flush()
 
@@ -279,7 +279,7 @@ class TestdbtManifestParser:
 
     def test_parse_invalid_manifest(self):
         """Test parsing invalid manifest."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             f.write("invalid json")
             f.flush()
 
@@ -334,7 +334,7 @@ from datetime import datetime
 dag = DAG('test', start_date=datetime(2024, 1, 1))
 """
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write(dag_code)
             f.flush()
 
@@ -357,7 +357,7 @@ dag = DAG('test', start_date=datetime(2024, 1, 1))
             "metadata": {},
         }
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(manifest, f)
             f.flush()
 

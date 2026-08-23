@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
+from .analytics import TestCoverageAnalyzer
 from .graph import DependencyGraphEngine
 from .models import (
     DependencyGraph,
@@ -17,6 +18,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class FailurePrediction:
     """Failure prediction for a node."""
+
     node_id: str
     failure_probability: float  # 0.0-1.0
     confidence: float
@@ -28,6 +30,7 @@ class FailurePrediction:
 @dataclass
 class AnomalyDetection:
     """Detected anomalies in dependency patterns."""
+
     anomaly_type: str  # unusual_connectivity, missing_tests, abandoned_node
     node_id: str
     severity: NodeSeverity
@@ -38,6 +41,7 @@ class AnomalyDetection:
 @dataclass
 class Recommendation:
     """Intelligence-based recommendation."""
+
     recommendation_type: str  # refactor, add_sla, increase_tests, optimize
     node_id: str
     priority: str  # critical, high, medium, low
@@ -49,6 +53,7 @@ class Recommendation:
 @dataclass
 class HealthScore:
     """Overall health score for dependency graph."""
+
     overall_score: float  # 0-100
     coverage_score: float
     connectivity_score: float
@@ -61,9 +66,14 @@ class HealthScore:
 class FailurePredictionEngine:
     """Predict likelihood of node failures."""
 
-    def __init__(self, graph: DependencyGraph):
+    def __init__(
+        self,
+        graph: DependencyGraph,
+        test_analyzer: Optional[TestCoverageAnalyzer] = None,
+    ):
         self.graph = graph
         self.engine = DependencyGraphEngine(graph)
+        self.test_analyzer = test_analyzer or TestCoverageAnalyzer(graph)
         self.failure_history: Dict[str, List[datetime]] = {}
 
     def record_failure(self, node_id: str) -> None:
@@ -112,8 +122,7 @@ class FailurePredictionEngine:
         # Factor 2: Upstream failures impact
         upstream = self.engine.get_upstream_nodes(node_id)
         failing_upstream = [
-            u for u in upstream
-            if u in self.failure_history and len(self.failure_history[u]) > 0
+            u for u in upstream if u in self.failure_history and len(self.failure_history[u]) > 0
         ]
         if failing_upstream:
             probability += 0.2 * (len(failing_upstream) / max(1, len(upstream)))
@@ -121,7 +130,7 @@ class FailurePredictionEngine:
             confidence = min(1.0, confidence + 0.1)
 
         # Factor 3: Test coverage
-        test_count = 0  # Would come from TestCoverageAnalyzer
+        test_count = self.test_analyzer.analyze_coverage(node_id).total_tests
         if test_count == 0:
             probability += 0.15
             factors.append("No test coverage")
@@ -157,10 +166,7 @@ class FailurePredictionEngine:
 
     def predict_all_nodes(self) -> Dict[str, FailurePrediction]:
         """Predict failures for all nodes."""
-        return {
-            node_id: self.predict_node_failure(node_id)
-            for node_id in self.graph.nodes
-        }
+        return {node_id: self.predict_node_failure(node_id) for node_id in self.graph.nodes}
 
     def get_high_risk_nodes(self, threshold: float = 0.5) -> List[FailurePrediction]:
         """Get nodes with failure probability above threshold."""
@@ -168,7 +174,7 @@ class FailurePredictionEngine:
         return sorted(
             [p for p in predictions.values() if p.failure_probability >= threshold],
             key=lambda p: p.failure_probability,
-            reverse=True
+            reverse=True,
         )
 
 
@@ -188,13 +194,19 @@ class AnomalyDetector:
         for isolated in orphans["isolated"]:
             node = self.graph.nodes.get(isolated)
             if node:
-                anomalies.append(AnomalyDetection(
-                    anomaly_type="isolated_node",
-                    node_id=isolated,
-                    severity=NodeSeverity.HIGH if node.severity == NodeSeverity.CRITICAL else NodeSeverity.MEDIUM,
-                    details=f"Node {node.name} has no dependencies or dependents",
-                    detected_at=datetime.utcnow(),
-                ))
+                anomalies.append(
+                    AnomalyDetection(
+                        anomaly_type="isolated_node",
+                        node_id=isolated,
+                        severity=(
+                            NodeSeverity.HIGH
+                            if node.severity == NodeSeverity.CRITICAL
+                            else NodeSeverity.MEDIUM
+                        ),
+                        details=f"Node {node.name} has no dependencies or dependents",
+                        detected_at=datetime.utcnow(),
+                    )
+                )
 
         # Detect unusual connectivity patterns
         centrality = self.engine.get_node_centrality()
@@ -204,37 +216,43 @@ class AnomalyDetector:
         for node_id, score in high_centrality.items():
             node = self.graph.nodes.get(node_id)
             if node:
-                anomalies.append(AnomalyDetection(
-                    anomaly_type="high_centrality",
-                    node_id=node_id,
-                    severity=NodeSeverity.MEDIUM,
-                    details=f"Node {node.name} has unusually high connectivity ({score:.1%})",
-                    detected_at=datetime.utcnow(),
-                ))
+                anomalies.append(
+                    AnomalyDetection(
+                        anomaly_type="high_centrality",
+                        node_id=node_id,
+                        severity=NodeSeverity.MEDIUM,
+                        details=f"Node {node.name} has unusually high connectivity ({score:.1%})",
+                        detected_at=datetime.utcnow(),
+                    )
+                )
 
         # Detect cycles (inherent anomalies)
         cycles = self.engine.detect_cycles()
         if cycles:
             for cycle in cycles[:5]:  # Report first 5 cycles
                 if cycle:
-                    anomalies.append(AnomalyDetection(
-                        anomaly_type="circular_dependency",
-                        node_id=cycle[0],
-                        severity=NodeSeverity.HIGH,
-                        details=f"Circular dependency: {' -> '.join(cycle[:3])}...",
-                        detected_at=datetime.utcnow(),
-                    ))
+                    anomalies.append(
+                        AnomalyDetection(
+                            anomaly_type="circular_dependency",
+                            node_id=cycle[0],
+                            severity=NodeSeverity.HIGH,
+                            details=f"Circular dependency: {' -> '.join(cycle[:3])}...",
+                            detected_at=datetime.utcnow(),
+                        )
+                    )
 
         # Detect unowned critical nodes
         for node in self.graph.nodes.values():
             if node.severity == NodeSeverity.CRITICAL and not node.owner:
-                anomalies.append(AnomalyDetection(
-                    anomaly_type="unowned_critical",
-                    node_id=node.id,
-                    severity=NodeSeverity.HIGH,
-                    details=f"Critical node {node.name} has no owner assigned",
-                    detected_at=datetime.utcnow(),
-                ))
+                anomalies.append(
+                    AnomalyDetection(
+                        anomaly_type="unowned_critical",
+                        node_id=node.id,
+                        severity=NodeSeverity.HIGH,
+                        details=f"Critical node {node.name} has no owner assigned",
+                        detected_at=datetime.utcnow(),
+                    )
+                )
 
         return anomalies
 
@@ -256,74 +274,82 @@ class RecommendationEngine:
         high_centrality_nodes = sorted(
             [(n, c) for n, c in centrality.items() if c > avg_centrality * 2],
             key=lambda x: x[1],
-            reverse=True
+            reverse=True,
         )
 
         for node_id, score in high_centrality_nodes[:5]:
             node = self.graph.nodes.get(node_id)
             if node:
-                recommendations.append(Recommendation(
-                    recommendation_type="refactor_centrality",
-                    node_id=node_id,
-                    priority="high" if score > avg_centrality * 3 else "medium",
-                    action=f"Refactor {node.name} to reduce connectivity",
-                    expected_benefit="Reduced coupling, easier maintenance",
-                    effort="2-3 days",
-                ))
+                recommendations.append(
+                    Recommendation(
+                        recommendation_type="refactor_centrality",
+                        node_id=node_id,
+                        priority="high" if score > avg_centrality * 3 else "medium",
+                        action=f"Refactor {node.name} to reduce connectivity",
+                        expected_benefit="Reduced coupling, easier maintenance",
+                        effort="2-3 days",
+                    )
+                )
 
         # Recommendation 2: Add SLAs to critical nodes
         critical_without_sla = [
-            n.id for n in self.graph.nodes.values()
-            if n.severity == NodeSeverity.CRITICAL
+            n.id for n in self.graph.nodes.values() if n.severity == NodeSeverity.CRITICAL
         ]
 
         for node_id in critical_without_sla[:10]:
             node = self.graph.nodes.get(node_id)
             if node:
                 downstream_count = len(self.engine.get_downstream_nodes(node_id))
-                recommendations.append(Recommendation(
-                    recommendation_type="add_sla",
-                    node_id=node_id,
-                    priority="critical",
-                    action=f"Define SLA for {node.name}",
-                    expected_benefit=f"Monitor {downstream_count} downstream nodes",
-                    effort="1-2 hours",
-                ))
+                recommendations.append(
+                    Recommendation(
+                        recommendation_type="add_sla",
+                        node_id=node_id,
+                        priority="critical",
+                        action=f"Define SLA for {node.name}",
+                        expected_benefit=f"Monitor {downstream_count} downstream nodes",
+                        effort="1-2 hours",
+                    )
+                )
 
         # Recommendation 3: Improve test coverage
         # (Would integrate with TestCoverageAnalyzer)
         poorly_tested = [
-            n.id for n in self.graph.nodes.values()
+            n.id
+            for n in self.graph.nodes.values()
             if n.severity in (NodeSeverity.CRITICAL, NodeSeverity.HIGH)
         ][:5]
 
         for node_id in poorly_tested:
             node = self.graph.nodes.get(node_id)
             if node:
-                recommendations.append(Recommendation(
-                    recommendation_type="improve_tests",
-                    node_id=node_id,
-                    priority="high",
-                    action=f"Add tests for {node.name}",
-                    expected_benefit="Reduce failure probability by 30%",
-                    effort="2-3 days",
-                ))
+                recommendations.append(
+                    Recommendation(
+                        recommendation_type="improve_tests",
+                        node_id=node_id,
+                        priority="high",
+                        action=f"Add tests for {node.name}",
+                        expected_benefit="Reduce failure probability by 30%",
+                        effort="2-3 days",
+                    )
+                )
 
         # Recommendation 4: Establish ownership
         unowned = [n for n in self.graph.nodes.values() if not n.owner]
         for node in unowned[:5]:
-            recommendations.append(Recommendation(
-                recommendation_type="establish_ownership",
-                node_id=node.id,
-                priority="high" if node.severity == NodeSeverity.CRITICAL else "medium",
-                action=f"Assign owner to {node.name}",
-                expected_benefit="Clear responsibility, faster response",
-                effort="1 hour",
-            ))
+            recommendations.append(
+                Recommendation(
+                    recommendation_type="establish_ownership",
+                    node_id=node.id,
+                    priority="high" if node.severity == NodeSeverity.CRITICAL else "medium",
+                    action=f"Assign owner to {node.name}",
+                    expected_benefit="Clear responsibility, faster response",
+                    effort="1 hour",
+                )
+            )
 
         return sorted(
             recommendations,
-            key=lambda r: {"critical": 0, "high": 1, "medium": 2, "low": 3}.get(r.priority, 4)
+            key=lambda r: {"critical": 0, "high": 1, "medium": 2, "low": 3}.get(r.priority, 4),
         )
 
     def get_top_recommendations(self, limit: int = 10) -> List[Recommendation]:
@@ -334,9 +360,14 @@ class RecommendationEngine:
 class HealthScoreCalculator:
     """Calculate overall health score for dependency graph."""
 
-    def __init__(self, graph: DependencyGraph):
+    def __init__(
+        self,
+        graph: DependencyGraph,
+        test_analyzer: Optional[TestCoverageAnalyzer] = None,
+    ):
         self.graph = graph
         self.engine = DependencyGraphEngine(graph)
+        self.test_analyzer = test_analyzer or TestCoverageAnalyzer(graph)
 
     def calculate_health_score(self) -> HealthScore:
         """
@@ -363,8 +394,7 @@ class HealthScoreCalculator:
         # SLA score (0-20)
         sla_score = self._calculate_sla_score()
 
-        overall = (coverage_score + connectivity_score + ownership_score +
-                  test_score + sla_score)
+        overall = coverage_score + connectivity_score + ownership_score + test_score + sla_score
 
         # Count issues
         issues = self._count_issues()
@@ -381,9 +411,7 @@ class HealthScoreCalculator:
 
     def _calculate_coverage_score(self) -> float:
         """Score completeness of metadata."""
-        nodes_with_description = sum(
-            1 for n in self.graph.nodes.values() if n.description
-        )
+        nodes_with_description = sum(1 for n in self.graph.nodes.values() if n.description)
         coverage = nodes_with_description / len(self.graph.nodes) if self.graph.nodes else 0
         return min(20.0, coverage * 20)
 
@@ -407,14 +435,20 @@ class HealthScoreCalculator:
         return min(20.0, ownership * 20)
 
     def _calculate_test_score(self) -> float:
-        """Score test coverage (would integrate with TestCoverageAnalyzer)."""
-        # Placeholder: assume 50% of nodes have tests
-        return 10.0
+        """Score test coverage using real data from TestCoverageAnalyzer."""
+        if not self.graph.nodes:
+            return 0.0
+        nodes_with_tests = sum(
+            1
+            for node_id in self.graph.nodes
+            if self.test_analyzer.analyze_coverage(node_id).total_tests > 0
+        )
+        coverage = nodes_with_tests / len(self.graph.nodes)
+        return min(20.0, coverage * 20)
 
     def _calculate_sla_score(self) -> float:
         """Score SLA coverage for critical nodes."""
-        critical = sum(1 for n in self.graph.nodes.values()
-                      if n.severity == NodeSeverity.CRITICAL)
+        critical = sum(1 for n in self.graph.nodes.values() if n.severity == NodeSeverity.CRITICAL)
         return min(20.0, (critical / max(1, critical)) * 10)
 
     def _count_issues(self) -> Dict[str, int]:
@@ -422,7 +456,8 @@ class HealthScoreCalculator:
         cycles = len(self.engine.detect_cycles())
         orphans = len(self.engine.detect_orphans()["isolated"])
         unowned_critical = sum(
-            1 for n in self.graph.nodes.values()
+            1
+            for n in self.graph.nodes.values()
             if n.severity == NodeSeverity.CRITICAL and not n.owner
         )
 

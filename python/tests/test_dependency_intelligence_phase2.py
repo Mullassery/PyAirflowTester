@@ -3,6 +3,7 @@
 from datetime import datetime, timedelta
 
 import pytest
+from pyairflowtester.dependency_intelligence.analytics import TestCoverageAnalyzer
 from pyairflowtester.dependency_intelligence.intelligence import (
     AnomalyDetector,
     FailurePredictionEngine,
@@ -32,16 +33,25 @@ def test_graph():
 
     nodes = {
         "critical_dag": Node(
-            "critical_dag", "Critical DAG", NodeType.DAG,
-            severity=NodeSeverity.CRITICAL, owner="team_a"
+            "critical_dag",
+            "Critical DAG",
+            NodeType.DAG,
+            severity=NodeSeverity.CRITICAL,
+            owner="team_a",
         ),
         "high_model": Node(
-            "high_model", "High Model", NodeType.DBT_MODEL,
-            severity=NodeSeverity.HIGH, owner="team_a"
+            "high_model",
+            "High Model",
+            NodeType.DBT_MODEL,
+            severity=NodeSeverity.HIGH,
+            owner="team_a",
         ),
         "medium_task": Node(
-            "medium_task", "Medium Task", NodeType.TASK,
-            severity=NodeSeverity.MEDIUM, owner="team_b"
+            "medium_task",
+            "Medium Task",
+            NodeType.TASK,
+            severity=NodeSeverity.MEDIUM,
+            owner="team_b",
         ),
     }
 
@@ -97,6 +107,57 @@ class TestFailurePredictionEngine:
 
         assert len(high_risk) >= 0
 
+    def test_test_coverage_affects_failure_probability(self, test_graph):
+        """Test coverage must come from the real TestCoverageAnalyzer, not a
+        hardcoded stub. A node with real assigned tests should score a lower
+        failure probability than the same node with none, and the two
+        FailurePredictionEngine instances (uninstrumented vs. wired to a
+        populated analyzer) must diverge for the exact same graph/node.
+        """
+        untested_engine = FailurePredictionEngine(test_graph)
+        untested_prediction = untested_engine.predict_node_failure("critical_dag")
+
+        analyzer = TestCoverageAnalyzer(test_graph)
+        analyzer.assign_tests("critical_dag", ["t1", "t2", "t3", "t4", "t5"], test_type="unit")
+        tested_engine = FailurePredictionEngine(test_graph, test_analyzer=analyzer)
+        tested_prediction = tested_engine.predict_node_failure("critical_dag")
+
+        assert "No test coverage" in untested_prediction.contributing_factors
+        assert "No test coverage" not in tested_prediction.contributing_factors
+        assert tested_prediction.failure_probability < untested_prediction.failure_probability
+
+
+class TestHealthScoreTestCoverage:
+    """Test that HealthScoreCalculator's test score reflects real graph data."""
+
+    def test_test_score_varies_with_real_coverage_data(self, test_graph):
+        """The test score must not be a fixed constant: a graph with no
+        assigned tests, a graph with partial coverage, and a graph with full
+        coverage should each produce a different, non-hardcoded test_score.
+        """
+        no_coverage_score = HealthScoreCalculator(test_graph).calculate_health_score().test_score
+
+        partial_analyzer = TestCoverageAnalyzer(test_graph)
+        partial_analyzer.assign_tests("critical_dag", ["t1", "t2", "t3"])
+        partial_score = (
+            HealthScoreCalculator(test_graph, test_analyzer=partial_analyzer)
+            .calculate_health_score()
+            .test_score
+        )
+
+        full_analyzer = TestCoverageAnalyzer(test_graph)
+        for node_id in test_graph.nodes:
+            full_analyzer.assign_tests(node_id, ["t1", "t2", "t3", "t4", "t5"])
+        full_score = (
+            HealthScoreCalculator(test_graph, test_analyzer=full_analyzer)
+            .calculate_health_score()
+            .test_score
+        )
+
+        assert no_coverage_score == 0.0
+        assert no_coverage_score < partial_score < full_score
+        assert full_score == 20.0
+
 
 class TestAnomalyDetector:
     """Test anomaly detection."""
@@ -113,8 +174,9 @@ class TestAnomalyDetector:
     def test_unowned_critical_detection(self, test_graph):
         """Test detection of unowned critical nodes."""
         # Add unowned critical node
-        unowned = Node("unowned", "Unowned", NodeType.TASK,
-                      severity=NodeSeverity.CRITICAL, owner="")
+        unowned = Node(
+            "unowned", "Unowned", NodeType.TASK, severity=NodeSeverity.CRITICAL, owner=""
+        )
         test_graph.add_node(unowned)
 
         detector = AnomalyDetector(test_graph)
@@ -186,10 +248,7 @@ class TestMetricsCollector:
         collector = MetricsCollector()
 
         metric = collector.record_metric(
-            MetricType.EXECUTION_TIME,
-            "node_1",
-            100.0,
-            {"env": "prod"}
+            MetricType.EXECUTION_TIME, "node_1", 100.0, {"env": "prod"}
         )
 
         assert metric.node_id == "node_1"
@@ -299,11 +358,7 @@ class TestEventLogger:
 
         now = datetime.utcnow()
         event = logger.log_execution(
-            "critical_dag",
-            "success",
-            1500,
-            now,
-            now + timedelta(seconds=1.5)
+            "critical_dag", "success", 1500, now, now + timedelta(seconds=1.5)
         )
 
         assert event.node_id == "critical_dag"

@@ -1,6 +1,5 @@
 """Tests for scanner module."""
 
-
 import logging
 
 import pytest
@@ -43,10 +42,7 @@ class TestScanner:
         Scanner.scan_dags, confirming it is really wired into the scan path
         the CLI uses (not just importable)."""
         dag_file = tmp_path / "prod_pipeline.py"
-        dag_file.write_text(
-            "password = 'hunter2'\n"
-            "conn_id = 'user@prod-host'\n"
-        )
+        dag_file.write_text("password = 'hunter2'\n" "conn_id = 'user@prod-host'\n")
 
         violations = scanner.scan_dags(tmp_path)
 
@@ -80,7 +76,9 @@ class TestScanner:
 from airflow import DAG
 task1 >> task2 >> task3 >> task1
 """
-        violations = [v for rule in scanner.dag_rules for v in rule.evaluate(source_code, "test.py")]
+        violations = [
+            v for rule in scanner.dag_rules for v in rule.evaluate(source_code, "test.py")
+        ]
         # Should detect circular dependency
         assert any(v.get("rule_id") == "AFW001" for v in violations)
 
@@ -90,7 +88,11 @@ task1 >> task2 >> task3 >> task1
 from airflow import DAG
 dag = DAG('production_dag', catchup=False)
 """
-        violations = [v for rule in scanner.dag_rules for v in rule.evaluate(source_code, "production_test.py")]
+        violations = [
+            v
+            for rule in scanner.dag_rules
+            for v in rule.evaluate(source_code, "production_test.py")
+        ]
         # Should detect missing SLA on production DAG
         assert any(v.get("rule_id") == "AFW002" for v in violations)
 
@@ -100,7 +102,9 @@ dag = DAG('production_dag', catchup=False)
 import tensorflow as tf
 from airflow import DAG
 """
-        violations = [v for rule in scanner.dag_rules for v in rule.evaluate(source_code, "test.py")]
+        violations = [
+            v for rule in scanner.dag_rules for v in rule.evaluate(source_code, "test.py")
+        ]
         # Should detect expensive imports
         assert any(v.get("rule_id") == "AFW003" for v in violations)
 
@@ -120,7 +124,9 @@ task1 = DummyOperator(task_id='task1', dag=dag)
 task2 = DummyOperator(task_id='task2', dag=dag)
 task1 >> task2
 """
-        violations = [v for rule in scanner.dag_rules for v in rule.evaluate(source_code, "test.py")]
+        violations = [
+            v for rule in scanner.dag_rules for v in rule.evaluate(source_code, "test.py")
+        ]
         # Should not detect circular dependencies
         assert not any(v.get("rule_id") == "AFW001" for v in violations)
 
@@ -136,11 +142,7 @@ task1 >> task2
         silently never fire against a real airflow.cfg without coercing
         boolean-looking strings to real bools."""
         cfg_file = tmp_path / "airflow.cfg"
-        cfg_file.write_text(
-            "[webserver]\n"
-            "enable_ssl = False\n"
-            "rbac = False\n"
-        )
+        cfg_file.write_text("[webserver]\n" "enable_ssl = False\n" "rbac = False\n")
 
         violations = scanner.scan_config(cfg_file)
 
@@ -153,11 +155,7 @@ task1 >> task2
         to True (any of configparser's boolean spellings) must not trigger
         the corresponding violations."""
         cfg_file = tmp_path / "airflow.cfg"
-        cfg_file.write_text(
-            "[webserver]\n"
-            "enable_ssl = true\n"
-            "rbac = yes\n"
-        )
+        cfg_file.write_text("[webserver]\n" "enable_ssl = true\n" "rbac = yes\n")
 
         violations = scanner.scan_config(cfg_file)
 

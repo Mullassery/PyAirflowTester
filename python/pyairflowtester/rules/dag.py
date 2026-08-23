@@ -90,13 +90,15 @@ class CircularDependencyRule(BaseRule):
 
         edges = self._extract_edges(source_code)
         if edges and self._has_cycle(edges):
-            violations.append({
-                "rule_id": self.id,
-                "severity": self.severity,
-                "affected_resource": file_name,
-                "message": "Circular dependency detected in task graph",
-                "remediation": "Review task dependencies and remove cycles",
-            })
+            violations.append(
+                {
+                    "rule_id": self.id,
+                    "severity": self.severity,
+                    "affected_resource": file_name,
+                    "message": "Circular dependency detected in task graph",
+                    "remediation": "Review task dependencies and remove cycles",
+                }
+            )
 
         return violations
 
@@ -118,13 +120,15 @@ class MissingSLARule(BaseRule):
 
         # Check if DAG has SLA defined
         if "sla" not in source_code.lower() and "production" in file_name.lower():
-            violations.append({
-                "rule_id": self.id,
-                "severity": self.severity,
-                "affected_resource": file_name,
-                "message": "Production DAG missing SLA configuration",
-                "remediation": "Add 'sla' parameter to DAG definition",
-            })
+            violations.append(
+                {
+                    "rule_id": self.id,
+                    "severity": self.severity,
+                    "affected_resource": file_name,
+                    "message": "Production DAG missing SLA configuration",
+                    "remediation": "Add 'sla' parameter to DAG definition",
+                }
+            )
 
         return violations
 
@@ -148,13 +152,15 @@ class ExpensiveImportsRule(BaseRule):
         for module in self.expensive_modules:
             pattern = rf"^import\s+{module}|^from\s+{module}\s+import"
             if re.search(pattern, source_code, re.MULTILINE):
-                violations.append({
-                    "rule_id": self.id,
-                    "severity": self.severity,
-                    "affected_resource": module,
-                    "message": f"Expensive import detected: {module}",
-                    "remediation": f"Move '{module}' import inside task or use lazy import",
-                })
+                violations.append(
+                    {
+                        "rule_id": self.id,
+                        "severity": self.severity,
+                        "affected_resource": module,
+                        "message": f"Expensive import detected: {module}",
+                        "remediation": f"Move '{module}' import inside task or use lazy import",
+                    }
+                )
 
         return violations
 
@@ -176,12 +182,14 @@ class ParseTimeRule(BaseRule):
 
         # Check for potentially slow patterns
         if re.search(r"for\s+\w+\s+in\s+.*:\s+create.*DAG", source_code, re.DOTALL):
-            violations.append({
-                "rule_id": self.id,
-                "severity": self.severity,
-                "affected_resource": file_name,
-                "message": "DAG file contains loop-based DAG generation (slow parsing)",
-                "remediation": "Use task factories or DAG generation patterns",
-            })
+            violations.append(
+                {
+                    "rule_id": self.id,
+                    "severity": self.severity,
+                    "affected_resource": file_name,
+                    "message": "DAG file contains loop-based DAG generation (slow parsing)",
+                    "remediation": "Use task factories or DAG generation patterns",
+                }
+            )
 
         return violations

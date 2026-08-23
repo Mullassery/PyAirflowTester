@@ -29,7 +29,7 @@ class AirflowDAGParser:
             Tuple of (dag_id, task_ids, dependencies)
         """
         try:
-            with open(file_path, 'r') as f:
+            with open(file_path, "r") as f:
                 source_code = f.read()
             return AirflowDAGParser.parse_dag_code(source_code)
         except Exception as e:
@@ -181,7 +181,7 @@ class dbtManifestParser:
         graph = DependencyGraph()
 
         try:
-            with open(manifest_path, 'r') as f:
+            with open(manifest_path, "r") as f:
                 manifest = json.load(f)
         except Exception as e:
             logger.error(f"Error reading manifest: {e}")
@@ -189,7 +189,6 @@ class dbtManifestParser:
 
         # Parse nodes (models, tests, sources, etc.)
         nodes_data = manifest.get("nodes", {})
-        metadata_nodes = manifest.get("metadata", {})
 
         for node_id, node_data in nodes_data.items():
             # Determine node type
@@ -328,7 +327,7 @@ class AirflowDatasetParser:
 
         for airflow_file in airflow_files:
             try:
-                with open(airflow_file, 'r') as f:
+                with open(airflow_file, "r") as f:
                     source_code = f.read()
 
                 datasets, deps = AirflowDatasetParser.parse_dataset_connections(source_code)

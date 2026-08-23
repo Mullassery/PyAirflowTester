@@ -23,20 +23,28 @@ def test_graph():
 
     nodes = {
         "team_a_dag": Node(
-            "team_a_dag", "Team A DAG", NodeType.DAG,
-            severity=NodeSeverity.CRITICAL, owner="team_a"
+            "team_a_dag", "Team A DAG", NodeType.DAG, severity=NodeSeverity.CRITICAL, owner="team_a"
         ),
         "team_a_model": Node(
-            "team_a_model", "Team A Model", NodeType.DBT_MODEL,
-            severity=NodeSeverity.HIGH, owner="team_a"
+            "team_a_model",
+            "Team A Model",
+            NodeType.DBT_MODEL,
+            severity=NodeSeverity.HIGH,
+            owner="team_a",
         ),
         "team_b_model": Node(
-            "team_b_model", "Team B Model", NodeType.DBT_MODEL,
-            severity=NodeSeverity.MEDIUM, owner="team_b"
+            "team_b_model",
+            "Team B Model",
+            NodeType.DBT_MODEL,
+            severity=NodeSeverity.MEDIUM,
+            owner="team_b",
         ),
         "unowned_model": Node(
-            "unowned_model", "Unowned Model", NodeType.DBT_MODEL,
-            severity=NodeSeverity.CRITICAL, owner=""
+            "unowned_model",
+            "Unowned Model",
+            NodeType.DBT_MODEL,
+            severity=NodeSeverity.CRITICAL,
+            owner="",
         ),
     }
 
@@ -110,10 +118,7 @@ class TestSchemaEvolutionTracker:
         new_schema = {"fields": ["col_a", "col_b", "col_c"]}
 
         evolution = tracker.add_schema_change(
-            "team_a_model",
-            "added_column",
-            old_schema,
-            new_schema
+            "team_a_model", "added_column", old_schema, new_schema
         )
 
         assert evolution.node_id == "team_a_model"
@@ -140,12 +145,7 @@ class TestSchemaEvolutionTracker:
         old_schema = {"fields": {"col_a": {"type": "string"}, "col_b": {"type": "int"}}}
         new_schema = {"fields": {"col_a": {"type": "string"}}}
 
-        tracker.add_schema_change(
-            "team_a_model",
-            "removed_column",
-            old_schema,
-            new_schema
-        )
+        tracker.add_schema_change("team_a_model", "removed_column", old_schema, new_schema)
 
         breaking = tracker.detect_breaking_changes()
 

@@ -171,8 +171,8 @@ class TestOrphanDetection:
 
         orphans = engine.detect_orphans()
         assert "task_1" in orphans["sources"]  # No incoming edges
-        assert "task_3" in orphans["sinks"]    # No outgoing edges
-        assert "task_4" in orphans["sinks"]    # No outgoing edges
+        assert "task_3" in orphans["sinks"]  # No outgoing edges
+        assert "task_4" in orphans["sinks"]  # No outgoing edges
 
     def test_isolated_node(self):
         """Test detection of isolated nodes."""
@@ -235,7 +235,7 @@ class TestGraphStats:
         stats = engine.get_stats()
         assert stats["node_count"] == 4
         assert stats["edge_count"] == 3
-        assert stats["has_cycles"] == False
+        assert not stats["has_cycles"]
         assert stats["component_count"] >= 1
 
     def test_node_type_filtering(self, simple_graph):

@@ -116,8 +116,7 @@ class Scanner:
 
         return {
             section: {
-                key: Scanner._coerce_config_value(value)
-                for key, value in parser.items(section)
+                key: Scanner._coerce_config_value(value) for key, value in parser.items(section)
             }
             for section in parser.sections()
         }
@@ -153,6 +152,7 @@ class Scanner:
 
         try:
             import json
+
             with open(manifest_path) as f:
                 manifest = json.load(f)
         except Exception as e:
@@ -271,4 +271,5 @@ class Scanner:
     def _get_scorer(self):
         """Get scorer instance."""
         from pyairflowtester.scoring import Scorer
+
         return Scorer()

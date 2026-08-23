@@ -50,13 +50,15 @@ class TaskCountRule(BaseRule):
         task_count = sum(len(re.findall(pattern, source_code)) for pattern in task_patterns)
 
         if task_count > 500:
-            violations.append({
-                "rule_id": self.id,
-                "severity": self.severity,
-                "affected_resource": file_name,
-                "message": f"DAG has {task_count} tasks (exceeds 500 limit)",
-                "remediation": "Split into multiple DAGs or use SubDAGs/task groups",
-            })
+            violations.append(
+                {
+                    "rule_id": self.id,
+                    "severity": self.severity,
+                    "affected_resource": file_name,
+                    "message": f"DAG has {task_count} tasks (exceeds 500 limit)",
+                    "remediation": "Split into multiple DAGs or use SubDAGs/task groups",
+                }
+            )
 
         return violations
 
@@ -78,13 +80,15 @@ class CatchupConfigRule(BaseRule):
 
         if re.search(r"catchup\s*=\s*True", source_code):
             if not re.search(r"backfill|batch_run", source_code):
-                violations.append({
-                    "rule_id": self.id,
-                    "severity": self.severity,
-                    "affected_resource": file_name,
-                    "message": "catchup=True enabled without backfill strategy",
-                    "remediation": "Add backfill logic or set catchup=False for production",
-                })
+                violations.append(
+                    {
+                        "rule_id": self.id,
+                        "severity": self.severity,
+                        "affected_resource": file_name,
+                        "message": "catchup=True enabled without backfill strategy",
+                        "remediation": "Add backfill logic or set catchup=False for production",
+                    }
+                )
 
         return violations
 
@@ -109,13 +113,15 @@ class SourceCodePoolConfigurationRule(BaseRule):
         all_tasks = len(re.findall(r"Operator\(", source_code))
 
         if task_with_pool == 0 and all_tasks > 0:
-            violations.append({
-                "rule_id": self.id,
-                "severity": self.severity,
-                "affected_resource": file_name,
-                "message": "Tasks using default pool (limited to 128 slots)",
-                "remediation": "Create dedicated pool for this DAG or set explicit pool",
-            })
+            violations.append(
+                {
+                    "rule_id": self.id,
+                    "severity": self.severity,
+                    "affected_resource": file_name,
+                    "message": "Tasks using default pool (limited to 128 slots)",
+                    "remediation": "Create dedicated pool for this DAG or set explicit pool",
+                }
+            )
 
         return violations
 
@@ -144,13 +150,15 @@ class HardcodedConnectionRule(BaseRule):
 
         for pattern in patterns:
             if re.search(pattern, source_code):
-                violations.append({
-                    "rule_id": self.id,
-                    "severity": self.severity,
-                    "affected_resource": file_name,
-                    "message": "Hardcoded connection ID or host detected",
-                    "remediation": "Use environment variables or Airflow variables",
-                })
+                violations.append(
+                    {
+                        "rule_id": self.id,
+                        "severity": self.severity,
+                        "affected_resource": file_name,
+                        "message": "Hardcoded connection ID or host detected",
+                        "remediation": "Use environment variables or Airflow variables",
+                    }
+                )
                 break
 
         return violations
@@ -180,13 +188,18 @@ class SecretsInCodeRule(BaseRule):
 
         for pattern, secret_type in secret_patterns:
             if re.search(pattern, source_code):
-                violations.append({
-                    "rule_id": self.id,
-                    "severity": self.severity,
-                    "affected_resource": file_name,
-                    "message": f"Hardcoded {secret_type} detected in source code",
-                    "remediation": "Move to environment variables, AWS Secrets Manager, or Airflow Variables",
-                })
+                violations.append(
+                    {
+                        "rule_id": self.id,
+                        "severity": self.severity,
+                        "affected_resource": file_name,
+                        "message": f"Hardcoded {secret_type} detected in source code",
+                        "remediation": (
+                            "Move to environment variables, AWS Secrets Manager, "
+                            "or Airflow Variables"
+                        ),
+                    }
+                )
                 break
 
         return violations
@@ -213,13 +226,15 @@ class RetryConfigurationRule(BaseRule):
         for retry_count in retry_matches:
             if int(retry_count) > 5:
                 if "exponential_backoff" not in source_code and "retry_delay" not in source_code:
-                    violations.append({
-                        "rule_id": self.id,
-                        "severity": self.severity,
-                        "affected_resource": file_name,
-                        "message": f"High retry count ({retry_count}) without backoff strategy",
-                        "remediation": "Add exponential_backoff or configure retry_delay",
-                    })
+                    violations.append(
+                        {
+                            "rule_id": self.id,
+                            "severity": self.severity,
+                            "affected_resource": file_name,
+                            "message": f"High retry count ({retry_count}) without backoff strategy",
+                            "remediation": "Add exponential_backoff or configure retry_delay",
+                        }
+                    )
                     break
 
         return violations
@@ -245,13 +260,18 @@ class SensorTimeoutRule(BaseRule):
 
             for timeout_val in timeout_matches:
                 if int(timeout_val) > 3600:  # 1 hour in seconds
-                    violations.append({
-                        "rule_id": self.id,
-                        "severity": self.severity,
-                        "affected_resource": file_name,
-                        "message": f"Sensor timeout > 1 hour ({timeout_val}s) without exponential backoff",
-                        "remediation": "Use exponential_backoff and poke_interval for sensors",
-                    })
+                    violations.append(
+                        {
+                            "rule_id": self.id,
+                            "severity": self.severity,
+                            "affected_resource": file_name,
+                            "message": (
+                                f"Sensor timeout > 1 hour ({timeout_val}s) "
+                                "without exponential backoff"
+                            ),
+                            "remediation": "Use exponential_backoff and poke_interval for sensors",
+                        }
+                    )
                     break
 
         return violations
@@ -274,18 +294,24 @@ class BranchComplexityRule(BaseRule):
 
         if "BranchPythonOperator" in source_code:
             # Count lines in python_callable to estimate complexity
-            branch_blocks = re.findall(r"def\s+\w+\(.*?\):(.+?)(?=\n(?:def|class|\Z))", source_code, re.DOTALL)
+            branch_blocks = re.findall(
+                r"def\s+\w+\(.*?\):(.+?)(?=\n(?:def|class|\Z))", source_code, re.DOTALL
+            )
 
             for block in branch_blocks:
                 line_count = block.count("\n")
                 if line_count > 30:
-                    violations.append({
-                        "rule_id": self.id,
-                        "severity": self.severity,
-                        "affected_resource": file_name,
-                        "message": "BranchPythonOperator has complex logic (>30 lines)",
-                        "remediation": "Simplify branching logic or split into separate operations",
-                    })
+                    violations.append(
+                        {
+                            "rule_id": self.id,
+                            "severity": self.severity,
+                            "affected_resource": file_name,
+                            "message": "BranchPythonOperator has complex logic (>30 lines)",
+                            "remediation": (
+                                "Simplify branching logic or split into separate operations"
+                            ),
+                        }
+                    )
                     break
 
         return violations
@@ -307,13 +333,15 @@ class DocumentationRule(BaseRule):
         violations = []
 
         if not re.search(r"description\s*=\s*['\"]", source_code):
-            violations.append({
-                "rule_id": self.id,
-                "severity": self.severity,
-                "affected_resource": file_name,
-                "message": "DAG missing description",
-                "remediation": "Add description parameter to DAG definition",
-            })
+            violations.append(
+                {
+                    "rule_id": self.id,
+                    "severity": self.severity,
+                    "affected_resource": file_name,
+                    "message": "DAG missing description",
+                    "remediation": "Add description parameter to DAG definition",
+                }
+            )
 
         return violations
 
@@ -335,13 +363,17 @@ class AlertingConfigurationRule(BaseRule):
 
         if "production" in file_name.lower() or "prod" in file_name.lower():
             if not re.search(r"on_failure_callback|on_retry_callback|email", source_code):
-                violations.append({
-                    "rule_id": self.id,
-                    "severity": self.severity,
-                    "affected_resource": file_name,
-                    "message": "Production DAG has no failure alerting configured",
-                    "remediation": "Add on_failure_callback, on_retry_callback, or email notifications",
-                })
+                violations.append(
+                    {
+                        "rule_id": self.id,
+                        "severity": self.severity,
+                        "affected_resource": file_name,
+                        "message": "Production DAG has no failure alerting configured",
+                        "remediation": (
+                            "Add on_failure_callback, on_retry_callback, or email notifications"
+                        ),
+                    }
+                )
 
         return violations
 
@@ -369,13 +401,15 @@ class OperatorDeprecationRule(BaseRule):
 
         for operator, recommendation in deprecated.items():
             if operator in source_code:
-                violations.append({
-                    "rule_id": self.id,
-                    "severity": self.severity,
-                    "affected_resource": operator,
-                    "message": f"Deprecated operator used: {operator}",
-                    "remediation": recommendation,
-                })
+                violations.append(
+                    {
+                        "rule_id": self.id,
+                        "severity": self.severity,
+                        "affected_resource": operator,
+                        "message": f"Deprecated operator used: {operator}",
+                        "remediation": recommendation,
+                    }
+                )
                 break
 
         return violations

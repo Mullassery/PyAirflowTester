@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class OwnershipAnalysis:
     """Ownership and team impact analysis."""
+
     owner: str
     owned_nodes: List[str]
     downstream_impact: int
@@ -30,6 +31,7 @@ class OwnershipAnalysis:
 @dataclass
 class SchemaEvolution:
     """Schema change tracking."""
+
     node_id: str
     changed_at: datetime
     change_type: str  # added_column, removed_column, type_change, renamed
@@ -41,6 +43,7 @@ class SchemaEvolution:
 @dataclass
 class SLAValidation:
     """SLA compliance tracking."""
+
     node_id: str
     has_sla: bool
     sla_target: Optional[str]
@@ -52,6 +55,7 @@ class SLAValidation:
 @dataclass
 class TestCoverageAnalysis:
     """Test coverage metrics."""
+
     node_id: str
     total_tests: int
     test_types: Dict[str, int]  # unit, integration, end_to_end
@@ -74,10 +78,7 @@ class OwnershipAnalyzer:
         Returns ownership analysis with risk metrics.
         """
         # Get all nodes owned by this owner
-        owned_nodes = [
-            n.id for n in self.graph.nodes.values()
-            if n.owner == owner
-        ]
+        owned_nodes = [n.id for n in self.graph.nodes.values() if n.owner == owner]
 
         # Calculate downstream impact
         all_downstream = set()
@@ -111,10 +112,7 @@ class OwnershipAnalyzer:
 
         # Calculate team risk score
         team_risk = self._calculate_team_risk(
-            len(owned_nodes),
-            len(all_downstream),
-            len(critical_deps),
-            len(affected_teams)
+            len(owned_nodes), len(all_downstream), len(critical_deps), len(affected_teams)
         )
 
         return OwnershipAnalysis(
@@ -127,8 +125,7 @@ class OwnershipAnalyzer:
             cross_team_edges=cross_team_edges,
         )
 
-    def _calculate_team_risk(self, owned: int, downstream: int,
-                            critical: int, teams: int) -> float:
+    def _calculate_team_risk(self, owned: int, downstream: int, critical: int, teams: int) -> float:
         """Calculate team risk score (0-10)."""
         score = 0.0
 
@@ -164,11 +161,7 @@ class OwnershipAnalyzer:
 
     def find_critical_ownership_gaps(self) -> List[Tuple[str, str]]:
         """Find nodes with no owner."""
-        unowned = [
-            (n.id, n.name)
-            for n in self.graph.nodes.values()
-            if not n.owner
-        ]
+        unowned = [(n.id, n.name) for n in self.graph.nodes.values() if not n.owner]
         return unowned
 
 
@@ -180,8 +173,9 @@ class SchemaEvolutionTracker:
         self.engine = DependencyGraphEngine(graph)
         self.evolution_history: List[SchemaEvolution] = []
 
-    def add_schema_change(self, node_id: str, change_type: str,
-                         old_schema: Dict, new_schema: Dict) -> SchemaEvolution:
+    def add_schema_change(
+        self, node_id: str, change_type: str, old_schema: Dict, new_schema: Dict
+    ) -> SchemaEvolution:
         """Record a schema change."""
         downstream = self.engine.get_downstream_nodes(node_id)
 
@@ -277,29 +271,22 @@ class SLAValidator:
             target_val = float(target.replace("ms", "").replace("s", ""))
             actual_val = float(actual.replace("ms", "").replace("s", ""))
             return actual_val <= target_val
-        except:
+        except (ValueError, AttributeError):
             return False
 
     def validate_all(self) -> Dict[str, SLAValidation]:
         """Validate all nodes with SLAs."""
-        return {
-            node_id: self.validate_node(node_id)
-            for node_id in self.sla_definitions
-        }
+        return {node_id: self.validate_node(node_id) for node_id in self.sla_definitions}
 
     def get_sla_violations(self) -> List[SLAValidation]:
         """Get nodes violating SLAs."""
         validations = self.validate_all()
-        return [
-            v for v in validations.values()
-            if v.compliance_status == "violated"
-        ]
+        return [v for v in validations.values() if v.compliance_status == "violated"]
 
     def get_missing_slas(self) -> List[str]:
         """Get critical nodes without SLAs."""
         critical_nodes = [
-            n.id for n in self.graph.nodes.values()
-            if n.severity == NodeSeverity.CRITICAL
+            n.id for n in self.graph.nodes.values() if n.severity == NodeSeverity.CRITICAL
         ]
         return [n for n in critical_nodes if n not in self.sla_definitions]
 
@@ -316,8 +303,7 @@ class TestCoverageAnalyzer:
         self.graph = graph
         self.test_assignments: Dict[str, List[str]] = {}
 
-    def assign_tests(self, node_id: str, tests: List[str],
-                    test_type: str = "unit") -> None:
+    def assign_tests(self, node_id: str, tests: List[str], test_type: str = "unit") -> None:
         """Assign tests to a node."""
         if node_id not in self.test_assignments:
             self.test_assignments[node_id] = []
@@ -368,17 +354,13 @@ class TestCoverageAnalyzer:
 
     def analyze_all(self) -> Dict[str, TestCoverageAnalysis]:
         """Analyze coverage for all nodes with tests."""
-        return {
-            node_id: self.analyze_coverage(node_id)
-            for node_id in self.test_assignments
-        }
+        return {node_id: self.analyze_coverage(node_id) for node_id in self.test_assignments}
 
     def get_poorly_tested_nodes(self) -> List[str]:
         """Get nodes with poor test coverage."""
         analyses = self.analyze_all()
         return [
-            node_id for node_id, analysis in analyses.items()
-            if analysis.coverage_status == "poor"
+            node_id for node_id, analysis in analyses.items() if analysis.coverage_status == "poor"
         ]
 
     def get_critical_test_gaps(self) -> List[Tuple[str, List[str]]]:

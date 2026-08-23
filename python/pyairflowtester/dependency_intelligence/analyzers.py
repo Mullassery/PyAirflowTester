@@ -77,7 +77,8 @@ class ImpactAnalysisEngine:
             return 0.0
 
         critical_count = sum(
-            1 for n in nodes
+            1
+            for n in nodes
             if self.graph.nodes.get(n, Node("", "", NodeType.TASK)).severity
             == NodeSeverity.CRITICAL
         )
@@ -89,7 +90,8 @@ class ImpactAnalysisEngine:
         result = {}
         for severity in NodeSeverity:
             result[severity] = [
-                n for n in nodes
+                n
+                for n in nodes
                 if self.graph.nodes.get(n, Node("", "", NodeType.TASK)).severity == severity
             ]
         return {k: v for k, v in result.items() if v}
@@ -99,7 +101,8 @@ class ImpactAnalysisEngine:
         result = {}
         for node_type in NodeType:
             result[node_type] = [
-                n for n in nodes
+                n
+                for n in nodes
                 if self.graph.nodes.get(n, Node("", "", NodeType.TASK)).type == node_type
             ]
         return {k: v for k, v in result.items() if v}
@@ -259,7 +262,8 @@ class RiskScoringEngine:
         # Upstream criticality (0-2)
         upstream = self.engine.get_upstream_nodes(node_id)
         critical_upstream = sum(
-            1 for u in upstream
+            1
+            for u in upstream
             if self.graph.nodes.get(u, Node("", "", NodeType.TASK)).severity
             == NodeSeverity.CRITICAL
         )
@@ -270,7 +274,8 @@ class RiskScoringEngine:
 
         # Critical dependents (0-3)
         critical_downstream = sum(
-            1 for d in downstream
+            1
+            for d in downstream
             if self.graph.nodes.get(d, Node("", "", NodeType.TASK)).severity
             == NodeSeverity.CRITICAL
         )
@@ -317,16 +322,17 @@ class RiskScoringEngine:
 
     def score_all_nodes(self) -> Dict[str, RiskScoreResult]:
         """Calculate risk scores for all nodes."""
-        return {
-            node_id: self.score_node(node_id)
-            for node_id in self.graph.nodes
-        }
+        return {node_id: self.score_node(node_id) for node_id in self.graph.nodes}
 
 
 class DriftDetectionEngine:
     """Detect changes in dependencies (drift detection)."""
 
-    def __init__(self, current_graph: DependencyGraph, previous_graph: Optional[DependencyGraph] = None):
+    def __init__(
+        self,
+        current_graph: DependencyGraph,
+        previous_graph: Optional[DependencyGraph] = None,
+    ):
         self.current_graph = current_graph
         self.previous_graph = previous_graph or DependencyGraph()
 
@@ -344,22 +350,26 @@ class DriftDetectionEngine:
         # Detect added nodes
         added_nodes = set(self.current_graph.nodes.keys()) - set(self.previous_graph.nodes.keys())
         if added_nodes:
-            drifts.append({
-                "type": "nodes_added",
-                "count": len(added_nodes),
-                "nodes": list(added_nodes),
-            })
+            drifts.append(
+                {
+                    "type": "nodes_added",
+                    "count": len(added_nodes),
+                    "nodes": list(added_nodes),
+                }
+            )
             affected_nodes.update(added_nodes)
             details.append(f"Added {len(added_nodes)} new nodes")
 
         # Detect removed nodes
         removed_nodes = set(self.previous_graph.nodes.keys()) - set(self.current_graph.nodes.keys())
         if removed_nodes:
-            drifts.append({
-                "type": "nodes_removed",
-                "count": len(removed_nodes),
-                "nodes": list(removed_nodes),
-            })
+            drifts.append(
+                {
+                    "type": "nodes_removed",
+                    "count": len(removed_nodes),
+                    "nodes": list(removed_nodes),
+                }
+            )
             affected_nodes.update(removed_nodes)
             details.append(f"Removed {len(removed_nodes)} nodes")
 
@@ -369,11 +379,13 @@ class DriftDetectionEngine:
         added_edges = curr_edges - prev_edges
 
         if added_edges:
-            drifts.append({
-                "type": "edges_added",
-                "count": len(added_edges),
-                "edges": [{"source": s, "target": t} for s, t in sorted(added_edges)],
-            })
+            drifts.append(
+                {
+                    "type": "edges_added",
+                    "count": len(added_edges),
+                    "edges": [{"source": s, "target": t} for s, t in sorted(added_edges)],
+                }
+            )
             for source, target in added_edges:
                 affected_nodes.add(source)
                 affected_nodes.add(target)
@@ -382,11 +394,13 @@ class DriftDetectionEngine:
         # Detect removed edges
         removed_edges = prev_edges - curr_edges
         if removed_edges:
-            drifts.append({
-                "type": "edges_removed",
-                "count": len(removed_edges),
-                "edges": [{"source": s, "target": t} for s, t in sorted(removed_edges)],
-            })
+            drifts.append(
+                {
+                    "type": "edges_removed",
+                    "count": len(removed_edges),
+                    "edges": [{"source": s, "target": t} for s, t in sorted(removed_edges)],
+                }
+            )
             for source, target in removed_edges:
                 affected_nodes.add(source)
                 affected_nodes.add(target)

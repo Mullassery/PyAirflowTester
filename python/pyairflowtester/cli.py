@@ -15,8 +15,7 @@ from pyairflowtester.scanner import Scanner
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -109,9 +108,11 @@ def scan(path, dags, dbt, airflow_cfg, format, output, severity):
 
     # Filter by severity
     from pyairflowtester.models import SEVERITY_WEIGHTS
+
     min_weight = SEVERITY_WEIGHTS.get(severity, 0)
     filtered = [
-        v for v in all_violations
+        v
+        for v in all_violations
         if SEVERITY_WEIGHTS.get(v.get("severity", "info"), 0) >= min_weight
     ]
 
@@ -156,8 +157,10 @@ def score(path, compare, format):
     scorer = scanner._get_scorer()
 
     # Scan for violations
-    dag_violations = scanner.scan_dags(Path(path) / "dags" if (Path(path) / "dags").exists() else Path(path))
-    dbt_violations = scanner.scan_dbt(Path(path) / "dbt" if (Path(path) / "dbt").exists() else Path(path))
+    dags_dir = Path(path) / "dags"
+    dag_violations = scanner.scan_dags(dags_dir if dags_dir.exists() else Path(path))
+    dbt_dir = Path(path) / "dbt"
+    dbt_violations = scanner.scan_dbt(dbt_dir if dbt_dir.exists() else Path(path))
 
     all_violations = dag_violations + dbt_violations
 

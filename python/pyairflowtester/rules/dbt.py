@@ -64,13 +64,15 @@ class MissingTestsRule(BaseRule):
             if is_public and materialization not in ["ephemeral", "temporary"]:
                 model_key = f"model.{model.get('package_name', '')}.{model_name}"
                 if model_key not in tested_models:
-                    violations.append({
-                        "rule_id": self.id,
-                        "severity": self.severity,
-                        "affected_resource": model_name,
-                        "message": f"Model '{model_name}' has no tests",
-                        "remediation": "Add tests for this model in schema.yml",
-                    })
+                    violations.append(
+                        {
+                            "rule_id": self.id,
+                            "severity": self.severity,
+                            "affected_resource": model_name,
+                            "message": f"Model '{model_name}' has no tests",
+                            "remediation": "Add tests for this model in schema.yml",
+                        }
+                    )
 
         return violations
 
@@ -113,13 +115,15 @@ class RedundantTestsRule(BaseRule):
         # Find duplicates
         for signature, test_list in test_signatures.items():
             if len(test_list) > 1:
-                violations.append({
-                    "rule_id": self.id,
-                    "severity": self.severity,
-                    "affected_resource": signature,
-                    "message": f"Redundant tests found: {', '.join(test_list[:2])}...",
-                    "remediation": "Consolidate duplicate tests",
-                })
+                violations.append(
+                    {
+                        "rule_id": self.id,
+                        "severity": self.severity,
+                        "affected_resource": signature,
+                        "message": f"Redundant tests found: {', '.join(test_list[:2])}...",
+                        "remediation": "Consolidate duplicate tests",
+                    }
+                )
 
         return violations
 
@@ -171,17 +175,20 @@ class UntestedModelRule(BaseRule):
 
             # Check if model is marked as critical
             is_critical = (
-                "critical" in description.lower() or
-                test_count == 0 and len(node.get("columns", {})) > 5
+                "critical" in description.lower()
+                or test_count == 0
+                and len(node.get("columns", {})) > 5
             )
 
             if is_critical and test_count == 0:
-                violations.append({
-                    "rule_id": self.id,
-                    "severity": self.severity,
-                    "affected_resource": model_name,
-                    "message": f"Critical model '{model_name}' has no tests",
-                    "remediation": "Add comprehensive tests for this critical model",
-                })
+                violations.append(
+                    {
+                        "rule_id": self.id,
+                        "severity": self.severity,
+                        "affected_resource": model_name,
+                        "message": f"Critical model '{model_name}' has no tests",
+                        "remediation": "Add comprehensive tests for this critical model",
+                    }
+                )
 
         return violations
