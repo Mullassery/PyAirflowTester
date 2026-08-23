@@ -34,6 +34,18 @@ observability). Ships as a pure-Python CLI.
   you build it yourself (`maturin develop`), but nothing in the CLI path uses it, and it is
   not built or shipped as part of the published package. Treat it as an experiment, not a
   supported acceleration layer.
+- **The `dependency_intelligence` "Phase 3" intelligence engines (`FailurePredictionEngine`,
+  `HealthScoreCalculator`) don't actually consult real test-coverage data, despite the
+  comments suggesting they should.** `FailurePredictionEngine.predict_node_failure` hardcodes
+  `test_count = 0` for every node (so "no test coverage" always contributes to the failure
+  score, regardless of what you've fed `TestCoverageAnalyzer`) and assumes a fixed 30-day
+  failure window. `HealthScoreCalculator._calculate_test_score` always returns the same fixed
+  value (10.0) regardless of the graph. They're importable and exported, but their
+  test-coverage inputs are not wired to the real `TestCoverageAnalyzer` yet — treat their
+  output as illustrative, not measured. Everything else under "Dependency Intelligence" below
+  (ownership, schema evolution, SLA validation, test-coverage analysis via
+  `TestCoverageAnalyzer`, anomaly detection, observability) does operate on real data you feed
+  it.
 
 ## Installation
 
