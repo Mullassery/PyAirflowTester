@@ -149,7 +149,7 @@ jobs:
         run: maturin build --release
 
       - name: Upload wheels
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: wheels
           path: target/wheels/
@@ -226,14 +226,23 @@ jobs:
         run: |
           pip install sphinx sphinx-rtd-theme
 
+      # This whole job has been scaffolding for docs that were never
+      # actually written -- no docs/ directory, no Sphinx config -- so it
+      # hard-failed on every push to main once the jobs gating it (needs:
+      # [rust-tests, python-tests]) started passing. Guard rather than
+      # build/deploy nothing.
       - name: Build documentation
         run: |
-          cd docs
-          make html
+          if [ -d "docs" ]; then
+            cd docs
+            make html
+          else
+            echo "docs/ doesn't exist yet -- this job's Sphinx doc site was never actually set up. Nothing to build."
+          fi
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' && hashFiles('docs/_build/html/**') != ''
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs/_build/html
