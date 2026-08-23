@@ -24,6 +24,7 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.rust }}
+          components: clippy
 
       - name: Cache cargo registry
         uses: actions/cache@v3
@@ -96,10 +97,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # rustsec/audit-check-action@v1 doesn't resolve (repo doesn't exist);
+      # the real action, rustsec/audit-check@v2, installs and builds
+      # cargo-audit fine but its own internal invocation of it
+      # ("Couldn't load ./Cargo.lock", "entity not found") failed for
+      # reasons that couldn't be reproduced by running cargo-audit
+      # directly -- so run it directly instead of depending on a
+      # third-party action's own internal path handling.
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
       - name: Run cargo audit
-        uses: rustsec/audit-check@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cargo install cargo-audit
+          cargo audit
 
       - name: Run bandit on Python code
         run: |
