@@ -93,8 +93,8 @@ fn test_severity_scoring() {
 fn test_severity_string_conversion() {
     assert_eq!(Severity::Critical.as_str(), "critical");
     assert_eq!(Severity::High.as_str(), "high");
-    assert_eq!(Severity::from_str("critical"), Some(Severity::Critical));
-    assert_eq!(Severity::from_str("invalid"), None);
+    assert_eq!(Severity::from_str_name("critical"), Some(Severity::Critical));
+    assert_eq!(Severity::from_str_name("invalid"), None);
 }
 
 #[test]
