@@ -239,16 +239,40 @@ Honestly scoped, in priority order:
   (bigger architectural change — would need the two rule/parsing implementations
   reconciled) or drop it to avoid maintaining two parallel implementations.
 - Broader dbt manifest coverage, more config-audit rules, richer report formats.
-- Tiered caching (L1 Memory, L2 Redis, L3 SQLite, L4 DuckDB): currently design-only —
-  `DEPENDENCY_CACHING_STRATEGY.md` sketches the architecture (including Redis pub/sub
-  invalidation) but none of it is implemented in `python/pyairflowtester/`. If/when
-  built, use event-driven invalidation rather than TTL-only expiration, and add locking
-  around concurrent multi-process cache writes from the start.
-- Runtime-import fallback for dynamic DAGs: the AST-based parser
-  (`dependency_intelligence/parsers.py`) only pattern-matches literal `DAG(...)`/
-  operator calls, so DAGs built via factory functions, dynamic loops, or `exec`/`eval`
-  are invisible to it. A sandboxed runtime-import fallback (e.g. parsing serialized DAG
-  bundles) would close that blind spot.
+- L2 (Redis) and L4 (DuckDB) cache tiers — `dependency_intelligence/cache.py` now
+  has real L1 (in-memory) and L3 (SQLite) tiers with event-driven invalidation (see
+  below); Redis/DuckDB would need this otherwise dependency-light package
+  (`click`, `rich` only) to take on a heavier/external dependency, so they're left
+  for when there's an actual multi-instance-production use case driving it.
+
+## Tiered caching and the dynamic-DAG fallback
+
+`DependencyGraphEngine` accepts an optional `cache=` (a `TieredCache` from
+`dependency_intelligence/cache.py`) to persist expensive analyses —
+`detect_cycles()`, `get_strongly_connected_components()` — across calls, and
+across separate process runs if you back it with a `SqliteCache`:
+
+```python
+from pyairflowtester.dependency_intelligence.cache import TieredCache, SqliteCache
+from pyairflowtester.dependency_intelligence.graph import DependencyGraphEngine
+
+cache = TieredCache(l3=SqliteCache("~/.cache/pyairflowtester/graph_cache.db"))
+engine = DependencyGraphEngine(graph, cache=cache)
+cycles = engine.detect_cycles()  # cached by content hash of the graph
+```
+
+For DAGs the static AST parser can't see into (built via factory functions,
+dynamic loops, or `exec`/`eval`), `dependency_intelligence/runtime_import.py`
+adds a sandboxed fallback that actually imports the file in an isolated,
+resource-limited subprocess and reads back the real, resolved task graph.
+Requires the optional `airflow` package to be installed (this project still
+doesn't take it on as a hard runtime dependency):
+
+```python
+from pyairflowtester.dependency_intelligence.runtime_import import parse_dag_file_with_fallback
+
+dag_id, task_ids, dependencies = parse_dag_file_with_fallback("dags/dynamic_dag.py")
+```
 
 ## Contributing
 

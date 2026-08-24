@@ -1,9 +1,11 @@
 """Core dependency graph engine with traversal and analysis algorithms."""
 
+import hashlib
 import logging
 from collections import deque
 from typing import Any, Dict, List, Optional, Set
 
+from .cache import TieredCache
 from .models import (
     DependencyGraph,
     NodeType,
@@ -15,12 +17,33 @@ logger = logging.getLogger(__name__)
 class DependencyGraphEngine:
     """Core graph engine with algorithms for traversal and analysis."""
 
-    def __init__(self, graph: DependencyGraph):
+    def __init__(self, graph: DependencyGraph, cache: Optional[TieredCache] = None):
+        """
+        Args:
+            graph: The dependency graph to analyze.
+            cache: Optional TieredCache (see cache.py) for persisting
+                expensive analyses (cycle detection, strongly connected
+                components) across calls -- and, with an L3 SqliteCache,
+                across separate process invocations, which the in-process
+                `_cycles_cache` below can never do. Cache keys are content
+                hashes of the graph's nodes/edges, so a changed graph
+                naturally misses rather than serving stale results.
+        """
         self.graph = graph
+        self.cache = cache
         self._upstream_cache: Dict[str, Set[str]] = {}
         self._downstream_cache: Dict[str, Set[str]] = {}
         self._cycles_cache: Optional[List[List[str]]] = None
         self._cache_valid = True
+
+    def _graph_content_hash(self) -> str:
+        """Stable hash of the graph's current nodes/edges, used as a cache
+        key prefix so a modified graph never serves another graph's -- or
+        its own earlier, since-changed -- cached analysis results."""
+        node_ids = sorted(self.graph.nodes.keys())
+        edge_pairs = sorted((e.source, e.target) for e in self.graph.edges)
+        digest_input = "|".join(node_ids) + "::" + "|".join(f"{s}>{t}" for s, t in edge_pairs)
+        return hashlib.sha256(digest_input.encode("utf-8")).hexdigest()[:16]
 
     def invalidate_cache(self):
         """Invalidate all caches after graph modification."""
@@ -187,6 +210,14 @@ class DependencyGraphEngine:
         if self._cycles_cache is not None:
             return self._cycles_cache
 
+        cache_key = None
+        if self.cache is not None:
+            cache_key = f"cycles:{self._graph_content_hash()}"
+            cached = self.cache.get(cache_key)
+            if cached is not None:
+                self._cycles_cache = cached
+                return cached
+
         cycles = []
         visited = set()
         rec_stack = set()
@@ -218,6 +249,8 @@ class DependencyGraphEngine:
 
         # Cache result
         self._cycles_cache = cycles
+        if self.cache is not None and cache_key is not None:
+            self.cache.set(cache_key, cycles, ttl_seconds=600)
         return cycles
 
     def has_cycle(self) -> bool:
@@ -319,6 +352,13 @@ class DependencyGraphEngine:
         Find strongly connected components using Tarjan's algorithm.
         For dependency graphs, identifies circular dependencies.
         """
+        cache_key = None
+        if self.cache is not None:
+            cache_key = f"sccs:{self._graph_content_hash()}"
+            cached = self.cache.get(cache_key)
+            if cached is not None:
+                return [set(scc) for scc in cached]
+
         index = 0
         stack = []
         indices = {}
@@ -356,6 +396,8 @@ class DependencyGraphEngine:
             if node_id not in indices:
                 strongconnect(node_id)
 
+        if self.cache is not None and cache_key is not None:
+            self.cache.set(cache_key, [sorted(scc) for scc in sccs], ttl_seconds=600)
         return sccs
 
     def get_node_centrality(self) -> Dict[str, float]:

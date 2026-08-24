@@ -2,6 +2,37 @@
 
 All notable changes to PyAirflowTester are documented in this file.
 
+## [0.4.0]
+
+### Added
+
+- **Tiered cache (L1 in-memory + L3 SQLite)** — `dependency_intelligence/cache.py`.
+  `DEPENDENCY_CACHING_STRATEGY.md` sketched a 4-layer design (L1 Memory, L2
+  Redis, L3 SQLite, L4 DuckDB) that had never actually been implemented in
+  code. `InMemoryCache` (thread-safe LRU with real per-entry TTL) and
+  `SqliteCache` (WAL-mode, multi-process-safe persistent cache) are now
+  real, plus a `TieredCache` combining them with event-driven invalidation
+  (`register_invalidation_rule`/`emit`) instead of relying on TTL expiry
+  alone. `DependencyGraphEngine` takes an optional `cache=` param and uses
+  it for `detect_cycles()`/`get_strongly_connected_components()`, keyed by
+  a content hash of the graph so a changed graph never serves stale
+  results — and, with a `SqliteCache`, results now survive across separate
+  process invocations, which nothing in this codebase could do before.
+  L2 (Redis) and L4 (DuckDB) are still not implemented — this ships two
+  real tiers, not four faked ones.
+- **Sandboxed runtime-import fallback for dynamic DAGs** —
+  `dependency_intelligence/runtime_import.py`. The static AST parser
+  (`AirflowDAGParser`) only recognizes literal `DAG(...)`/`*Operator(...)`
+  calls, so it misses DAGs built via factory functions, dynamic loops, or
+  `exec`/`eval`. `parse_dag_via_runtime_import()` actually imports the DAG
+  file in an isolated subprocess (resource-limited, timeout-guarded) and
+  reads back the real, fully-resolved task graph from actual `airflow.models.DAG`
+  objects — correct regardless of how dynamically the tasks were
+  constructed. Opt-in and requires the optional `airflow` package, per this
+  project's existing design of not taking Airflow on as a hard runtime
+  dependency. `parse_dag_file_with_fallback()` tries the fast static parser
+  first and only pays for the subprocess import when that comes back empty.
+
 ## [0.3.1] - 2026-08-23
 
 ### Real fix: dependency-intelligence health/risk scoring no longer hardcoded

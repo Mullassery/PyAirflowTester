@@ -1,6 +1,7 @@
 """Tests for dependency graph engine."""
 
 import pytest
+from pyairflowtester.dependency_intelligence.cache import TieredCache
 from pyairflowtester.dependency_intelligence.graph import DependencyGraphEngine
 from pyairflowtester.dependency_intelligence.models import (
     DependencyGraph,
@@ -286,3 +287,84 @@ class TestCaching:
         # Results should still be computed (but from scratch)
         upstream_3_after = engine.get_upstream_nodes("task_3")
         assert len(upstream_3_after) == 2
+
+
+class TestTieredCacheIntegration:
+    """DependencyGraphEngine's optional TieredCache param (cache.py) --
+    unlike the in-process-only cache above, this can survive across
+    separate DependencyGraphEngine instances (e.g. separate process
+    invocations, with an L3 SqliteCache)."""
+
+    def test_engine_without_cache_still_works(self, cyclic_graph):
+        engine = DependencyGraphEngine(cyclic_graph)
+        assert engine.cache is None
+        assert len(engine.detect_cycles()) > 0
+
+    def test_detect_cycles_populates_and_reuses_cache(self, cyclic_graph):
+        cache = TieredCache()
+        engine = DependencyGraphEngine(cyclic_graph, cache=cache)
+
+        cycles = engine.detect_cycles()
+        assert len(cycles) > 0
+
+        cache_key = f"cycles:{engine._graph_content_hash()}"
+        assert cache.get(cache_key) == cycles
+
+    def test_second_engine_instance_reuses_first_ones_cached_result(self, cyclic_graph):
+        """This is the actual cross-invocation persistence the roadmap asked
+        for: a fresh DependencyGraphEngine over the *same* graph content
+        gets a cache hit from a previous engine's work."""
+        cache = TieredCache()
+        first_engine = DependencyGraphEngine(cyclic_graph, cache=cache)
+        first_cycles = first_engine.detect_cycles()
+
+        second_engine = DependencyGraphEngine(cyclic_graph, cache=cache)
+        second_cycles = second_engine.detect_cycles()
+
+        assert second_cycles == first_cycles
+        # Confirm it was actually a cache hit, not recomputed identically by chance.
+        assert cache.l1.stats.hits >= 1
+
+    def test_changed_graph_gets_a_different_cache_key_not_stale_results(self, simple_graph):
+        cache = TieredCache()
+        engine = DependencyGraphEngine(simple_graph, cache=cache)
+        hash_before = engine._graph_content_hash()
+        engine.detect_cycles()
+
+        simple_graph.add_node(Node("task_5", "Task 5", NodeType.TASK))
+        simple_graph.add_edge(Edge("task_3", "task_5"))
+
+        hash_after = engine._graph_content_hash()
+        assert hash_after != hash_before
+
+    def test_strongly_connected_components_cache_round_trips_as_sets(self, cyclic_graph):
+        cache = TieredCache()
+        engine = DependencyGraphEngine(cyclic_graph, cache=cache)
+
+        first = engine.get_strongly_connected_components()
+        second_engine = DependencyGraphEngine(cyclic_graph, cache=cache)
+        second = second_engine.get_strongly_connected_components()
+
+        assert first == second
+        assert all(isinstance(scc, set) for scc in second)
+
+    def test_sqlite_backed_cache_persists_across_process_boundary_simulation(
+        self, cyclic_graph, tmp_path
+    ):
+        from pyairflowtester.dependency_intelligence.cache import SqliteCache
+
+        db_path = tmp_path / "graph_cache.db"
+
+        # Simulate one process run.
+        cache1 = TieredCache(l3=SqliteCache(db_path))
+        engine1 = DependencyGraphEngine(cyclic_graph, cache=cache1)
+        cycles1 = engine1.detect_cycles()
+        cache1.l3.close()
+
+        # Simulate a second, independent process run against a fresh L1.
+        cache2 = TieredCache(l3=SqliteCache(db_path))
+        engine2 = DependencyGraphEngine(cyclic_graph, cache=cache2)
+        cycles2 = engine2.detect_cycles()
+
+        assert cycles2 == cycles1
+        cache2.l3.close()
