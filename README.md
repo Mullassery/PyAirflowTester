@@ -239,6 +239,16 @@ Honestly scoped, in priority order:
   (bigger architectural change — would need the two rule/parsing implementations
   reconciled) or drop it to avoid maintaining two parallel implementations.
 - Broader dbt manifest coverage, more config-audit rules, richer report formats.
+- Tiered caching (L1 Memory, L2 Redis, L3 SQLite, L4 DuckDB): currently design-only —
+  `DEPENDENCY_CACHING_STRATEGY.md` sketches the architecture (including Redis pub/sub
+  invalidation) but none of it is implemented in `python/pyairflowtester/`. If/when
+  built, use event-driven invalidation rather than TTL-only expiration, and add locking
+  around concurrent multi-process cache writes from the start.
+- Runtime-import fallback for dynamic DAGs: the AST-based parser
+  (`dependency_intelligence/parsers.py`) only pattern-matches literal `DAG(...)`/
+  operator calls, so DAGs built via factory functions, dynamic loops, or `exec`/`eval`
+  are invisible to it. A sandboxed runtime-import fallback (e.g. parsing serialized DAG
+  bundles) would close that blind spot.
 
 ## Contributing
 
