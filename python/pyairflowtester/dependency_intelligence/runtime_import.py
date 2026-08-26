@@ -116,9 +116,7 @@ def parse_dag_via_runtime_import(
     logger = logging.getLogger(__name__)
 
     resolved_path = str(Path(file_path).resolve())
-    script = _SANDBOX_SCRIPT.format(
-        file_path=resolved_path, memory_limit_bytes=memory_limit_bytes
-    )
+    script = _SANDBOX_SCRIPT.format(file_path=resolved_path, memory_limit_bytes=memory_limit_bytes)
 
     try:
         proc = subprocess.run(

@@ -39,7 +39,7 @@ def example_1_build_graph():
 
     # Display node type breakdown
     print(f"\nNode Types:")
-    for node_type, count in stats['node_types'].items():
+    for node_type, count in stats["node_types"].items():
         print(f"  {node_type.value}: {count}")
 
     return graph
@@ -65,8 +65,12 @@ def example_2_impact_analysis(graph):
 
     # Show breakdown by severity
     print(f"\nImpacted Nodes by Severity:")
-    for severity in [NodeSeverity.CRITICAL, NodeSeverity.HIGH,
-                     NodeSeverity.MEDIUM, NodeSeverity.LOW]:
+    for severity in [
+        NodeSeverity.CRITICAL,
+        NodeSeverity.HIGH,
+        NodeSeverity.MEDIUM,
+        NodeSeverity.LOW,
+    ]:
         nodes = result.by_severity.get(severity, [])
         if nodes:
             print(f"  {severity.value.upper()}: {len(nodes)} nodes")
@@ -110,8 +114,9 @@ def example_3_blast_radius(graph):
 
     # Show severity distribution
     print(f"\nSeverity Distribution of Affected Nodes:")
-    for severity, count in sorted(result.severity_distribution.items(),
-                                  key=lambda x: x[0].value, reverse=True):
+    for severity, count in sorted(
+        result.severity_distribution.items(), key=lambda x: x[0].value, reverse=True
+    ):
         print(f"  {severity.value.upper()}: {count}")
 
     # Recommendation
@@ -142,10 +147,9 @@ def example_4_cycle_detection(graph):
 
         for i, cycle in enumerate(cycles, 1):
             print(f"\nCycle {i}:")
-            cycle_path = " → ".join([
-                graph.nodes.get(n, type('', (), {'name': n})()).name
-                for n in cycle
-            ])
+            cycle_path = " → ".join(
+                [graph.nodes.get(n, type("", (), {"name": n})()).name for n in cycle]
+            )
             print(f"  {cycle_path}")
     else:
         print(f"\n✓ No circular dependencies found!")
@@ -170,9 +174,9 @@ def example_5_orphan_detection(graph):
     print(f"  Sinks (no outgoing): {len(orphans['sinks'])}")
     print(f"  Isolated: {len(orphans['isolated'])}")
 
-    if orphans['isolated']:
+    if orphans["isolated"]:
         print(f"\nIsolated Nodes:")
-        for node_id in orphans['isolated'][:10]:
+        for node_id in orphans["isolated"][:10]:
             node = graph.nodes.get(node_id)
             if node:
                 print(f"  - {node.name} ({node.type.value})")
@@ -194,11 +198,7 @@ def example_6_risk_scoring(graph):
     all_scores = risk_engine.score_all_nodes()
 
     # Sort by score
-    sorted_scores = sorted(
-        all_scores.items(),
-        key=lambda x: x[1].risk_score,
-        reverse=True
-    )
+    sorted_scores = sorted(all_scores.items(), key=lambda x: x[1].risk_score, reverse=True)
 
     # Show top 10 highest risk nodes
     print(f"\nTop 10 Highest Risk Nodes:")
@@ -212,8 +212,10 @@ def example_6_risk_scoring(graph):
             if len(result.factors) > 2:
                 factors_str += f", +{len(result.factors)-2} more"
 
-            print(f"{node.name:<25} {result.risk_score:<8.1f} "
-                  f"{result.severity.value:<12} {factors_str:<30}")
+            print(
+                f"{node.name:<25} {result.risk_score:<8.1f} "
+                f"{result.severity.value:<12} {factors_str:<30}"
+            )
 
     # Show risk distribution
     print(f"\nRisk Score Distribution:")
@@ -239,6 +241,7 @@ def example_7_drift_detection(current_graph, previous_version_graph=None):
     # If no previous graph provided, use current as baseline
     if previous_version_graph is None:
         from pyairflowtester.dependency_intelligence.models import DependencyGraph
+
         previous_version_graph = DependencyGraph()
 
     # Create drift detection engine
@@ -283,10 +286,7 @@ def example_8_advanced_queries(graph):
     print("\nQuery 2: Dependency path from 'dag_raw' to 'dashboard_sales'")
     path = engine.get_path("dag_raw", "dashboard_sales")
     if path:
-        path_str = " → ".join([
-            graph.nodes.get(n, type('', (), {'name': n})()).name
-            for n in path
-        ])
+        path_str = " → ".join([graph.nodes.get(n, type("", (), {"name": n})()).name for n in path])
         print(f"  Path: {path_str}")
     else:
         print(f"  No path found (nodes are disconnected)")
@@ -305,10 +305,9 @@ def example_8_advanced_queries(graph):
     print("\nQuery 5: Critical path (longest dependency chain)")
     critical_path = engine.get_critical_path()
     if critical_path:
-        path_str = " → ".join([
-            graph.nodes.get(n, type('', (), {'name': n})()).name
-            for n in critical_path[:5]
-        ])
+        path_str = " → ".join(
+            [graph.nodes.get(n, type("", (), {"name": n})()).name for n in critical_path[:5]]
+        )
         print(f"  Longest path ({len(critical_path)} nodes): {path_str}...")
 
     # Query 6: Centrality analysis
