@@ -56,3 +56,6 @@ Thumbs.db
 # Builds
 *.whl
 *.tar.gz
+
+# Runtime output (not source)
+token_validations/
