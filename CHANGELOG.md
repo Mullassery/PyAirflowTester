@@ -2,6 +2,17 @@
 
 All notable changes to PyAirflowTester are documented in this file.
 
+## [0.5.0]
+
+### Added
+
+- **Web dashboard (`pyairflowtester serve`)** — `python/pyairflowtester/web/app.py`.
+  The unified graph engine (DAG/dbt node analytics, `DashboardBuilder`) was
+  previously CLI-only; `DashboardBuilder`'s output is now also served as a real
+  browsable FastAPI app (node list, per-node dashboard, health dashboard),
+  rendered as actual HTML tables rather than a JSON dump. Optional `web` extra
+  (`fastapi`, `uvicorn`, `jinja2`) — `pip install pyairflowtester[web]`.
+
 ## [0.4.0]
 
 ### Added

@@ -256,6 +256,53 @@ def connect(airflow_home, airflow_db):
         raise SystemExit(1)
 
 
+@main.command()
+@click.option(
+    "--dags",
+    type=click.Path(exists=True),
+    help="Path to Airflow DAGs directory (same as `pyairflowtester dependency build --dags`)",
+)
+@click.option(
+    "--dbt-manifest",
+    type=click.Path(exists=True),
+    help="Path to dbt manifest.json",
+)
+@click.option("--host", type=str, default="127.0.0.1", help="Host to bind the server to")
+@click.option("--port", type=int, default=8080, help="Port to bind the server to")
+def serve(dags, dbt_manifest, host, port):
+    """
+    Launch the web dashboard.
+
+    Builds the dependency graph from --dags/--dbt-manifest (same sources as
+    `pyairflowtester dependency build`) and serves DashboardBuilder output as
+    a browsable HTML dashboard at http://HOST:PORT/.
+
+    Requires the optional `web` extra:
+
+        pip install pyairflowtester[web]
+    """
+    try:
+        import uvicorn
+    except ImportError:
+        console.print("[red]✗ The web dashboard requires optional dependencies.[/red]")
+        console.print("Install them with: [bold]pip install pyairflowtester\\[web][/bold]")
+        raise SystemExit(1)
+
+    from pyairflowtester.web.app import build_app_from_sources
+
+    console.print("[bold cyan]PyAirflowTester Web Dashboard[/bold cyan]")
+    console.print(
+        f"Building dependency graph (dags={dags or '-'}, dbt_manifest={dbt_manifest or '-'})\n"
+    )
+
+    app = build_app_from_sources(dags=dags, dbt_manifest=dbt_manifest)
+    node_count = len(app.state.graph.nodes)
+    console.print(f"[green]Graph ready:[/green] {node_count} node(s)")
+    console.print(f"Serving at [green]http://{host}:{port}[/green]  (Ctrl+C to stop)\n")
+
+    uvicorn.run(app, host=host, port=port)
+
+
 def _display_violations(violations):
     """Display violations in rich table format."""
     if not violations:

@@ -2,7 +2,7 @@
 
 Static analysis and dependency-graph tooling for Airflow DAGs and dbt projects, plus a
 library-level dependency intelligence toolkit (impact analysis, blast radius, risk scoring,
-observability). Ships as a pure-Python CLI.
+observability). Ships as a pure-Python CLI, with an optional web dashboard.
 
 ## What actually works today
 
@@ -13,11 +13,17 @@ observability). Ships as a pure-Python CLI.
 - **`pyairflowtester score`** — aggregate risk score from scan findings.
 - **`pyairflowtester dependency ...`** — build a unified dependency graph from DAG files and a
   dbt manifest, then query impact/blast-radius/lineage/cycles/orphans/risk-score over it.
+- **`pyairflowtester serve`** — launches a real FastAPI + uvicorn web dashboard (optional
+  `pip install pyairflowtester[web]`) that builds the same dependency graph as `dependency
+  build` and renders `DashboardBuilder` output as actual browsable HTML pages (a node list at
+  `/`, a per-node dashboard at `/nodes/<node_id>`, and an overall `/health` page) — not a JSON
+  dump, real HTML tables. See `python/pyairflowtester/web/app.py`.
 - The `pyairflowtester.dependency_intelligence` package (usable as a library, see examples
   below) for ownership tracking, schema-evolution tracking, SLA validation, test-coverage
   analysis, anomaly detection, recommendations, and observability primitives
   (metrics/alerts/events/dashboards) — these operate on the graph you build, not on a live
-  system.
+  system. `DashboardBuilder`'s output now also has a real HTML frontend via `serve` above,
+  not just plain dicts for programmatic use.
 
 ## What does not work (yet) — please read before relying on this
 
@@ -58,7 +64,13 @@ uv pip install pyairflowtester
 pyairflowtester --version
 ```
 
-Pure Python — no Rust toolchain required.
+Pure Python — no Rust toolchain required. The CLI's core commands (`scan`, `score`, `rules`,
+`dependency ...`) have no dependencies beyond `click`/`rich`. The web dashboard (`serve`) is
+optional and pulls in `fastapi`/`uvicorn`/`jinja2`:
+
+```bash
+pip install "pyairflowtester[web]"
+```
 
 For development:
 
@@ -174,6 +186,34 @@ builder = DashboardBuilder(graph, metrics, alerts, events)
 dashboard = builder.build_health_dashboard()
 ```
 
+## Web Dashboard: `serve`
+
+`DashboardBuilder` above returns plain dicts for programmatic use. `pyairflowtester serve`
+serves that same output as a real, browsable HTML dashboard — a genuinely minimal app (FastAPI
++ Jinja2-rendered HTML, no JS framework), not a JSON viewer:
+
+```bash
+pip install "pyairflowtester[web]"
+pyairflowtester serve --dags dags/ --dbt-manifest manifest.json --port 8080
+# then open http://127.0.0.1:8080/
+```
+
+Routes:
+
+- `GET /` — lists every node in the dependency graph (DAGs, tasks, dbt models, ...), with its
+  type, severity, owner, and upstream/downstream counts, linking to its dashboard.
+- `GET /nodes/{node_id}` — renders `DashboardBuilder.build_node_dashboard(node_id)` as HTML
+  (execution metrics, reliability/failure rate, active alerts, recent events). 404s for an
+  unknown node ID.
+- `GET /health` — renders `DashboardBuilder.build_health_dashboard()`: graph-wide stats, top
+  failing nodes, slowest nodes.
+
+The graph is built once at startup from `--dags`/`--dbt-manifest` (same source-collection logic
+as `pyairflowtester dependency build`). Metrics/alerts/events start empty unless you feed them
+programmatically (as in the snippet above) before calling `create_app()` yourself — `serve`
+itself doesn't fabricate execution history. Implementation: `python/pyairflowtester/web/app.py`;
+tests: `python/tests/test_web_app.py` (uses FastAPI's `TestClient`, no real socket bound).
+
 ## Architecture
 
 Two real, independent things live in this repo:
@@ -199,8 +239,9 @@ The `Analyzer` class (runtime correlation against live Airflow/dbt) is a stub th
 Runtime correlation is explicitly not implemented (fails fast, doesn't fake results). The
 Rust core is not part of the supported path.
 
-- Test suite: `python/tests/`, run with `pytest` from the repo root — **163 tests, 0
-  failing** (verify yourself: `pytest python/tests/ -v`).
+- Test suite: `python/tests/`, run with `pytest` from the repo root — **205 tests, 0
+  failing** (verify yourself: `pytest python/tests/ -v`). The web dashboard tests
+  (`test_web_app.py`) are skipped automatically if the optional `web` extra isn't installed.
 - Static rules: 33, all wired into `scan` (previously most of the catalog — the
   `dag_advanced.py` rules including secrets detection, and all of `config.py` — was defined
   but never actually invoked by `scan`).
@@ -219,6 +260,7 @@ pyairflowtester dependency detect-cycles
 pyairflowtester dependency detect-orphans
 pyairflowtester dependency risk-score --top 20
 pyairflowtester connect --airflow-home $AIRFLOW_HOME  # currently: reports "not implemented"
+pyairflowtester serve --dags dags/ --dbt-manifest manifest.json --port 8080  # requires [web] extra
 ```
 
 ## Requirements
