@@ -5,7 +5,7 @@ edition = "2021"
 authors = ["PyAirflowTester Contributors"]
 description = "Unified Airflow + dbt reliability and quality platform"
 repository = "https://github.com/mullassery/pyairflowtester"
-license = "Proprietary"
+license = "Apache-2.0"
 
 [lib]
 name = "pyairflowtester"

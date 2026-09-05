@@ -322,7 +322,7 @@ Contributions welcome. Please submit pull requests to GitHub.
 
 ## License
 
-Proprietary. See LICENSE file for details.
+This project is licensed under the [Apache License 2.0](LICENSE).
 
 ## Contact
 
