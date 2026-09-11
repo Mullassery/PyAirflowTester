@@ -51,9 +51,7 @@ def graph():
             severity=NodeSeverity.HIGH,
         )
     )
-    g.add_edge(
-        Edge("dag_orders", "model_fact_orders", relationship_type=RelationshipType.TRIGGERS)
-    )
+    g.add_edge(Edge("dag_orders", "model_fact_orders", relationship_type=RelationshipType.TRIGGERS))
     return g
 
 

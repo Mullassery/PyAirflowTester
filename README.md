@@ -1,8 +1,38 @@
 # PyAirflowTester: Airflow & dbt Static Analysis + Dependency Intelligence
 
+## Problem
+
+Airflow DAGs and dbt models accumulate risk silently: a hardcoded secret,
+a missing SLA, a circular dependency, an untested high-importance model —
+none of it shows up until something breaks in production, and there's
+rarely a single tool that checks both the orchestration layer (Airflow)
+and the transformation layer (dbt) together.
+
+## Solution
+
 Static analysis and dependency-graph tooling for Airflow DAGs and dbt projects, plus a
 library-level dependency intelligence toolkit (impact analysis, blast radius, risk scoring,
 observability). Ships as a pure-Python CLI, with an optional web dashboard.
+
+[![PyPI](https://img.shields.io/pypi/v/pyairflowtester)](https://pypi.org/project/pyairflowtester/)
+[![CI](https://github.com/Mullassery/PyAirflowTester/actions/workflows/ci.yml/badge.svg)](https://github.com/Mullassery/PyAirflowTester/actions/workflows/ci.yml)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
+
+## Use cases
+
+- **Gating CI on Airflow/dbt risk** — `pyairflowtester scan --format sarif`
+  feeds GitHub code scanning directly; `score --compare main` catches a PR
+  that raises risk relative to the base branch.
+- **Finding blast radius before a deploy** — `dependency blast-radius -n
+  <node_id>` answers "is this safe to ship" from a real dependency graph,
+  not a guess.
+- **A dashboard over DAG/dbt health without standing up a database** —
+  `pyairflowtester serve` renders real HTML from the same graph the CLI
+  builds, no separate service to run.
+- **Not yet a good fit for:** correlating findings against a live Airflow
+  metadata DB / dbt run history — the `Analyzer`/`connect` runtime-
+  correlation path is an explicit, fail-fast stub today, not a working
+  feature (see [What does not work (yet)](#what-does-not-work-yet--please-read-before-relying-on-this)).
 
 ## What actually works today
 
@@ -239,9 +269,10 @@ The `Analyzer` class (runtime correlation against live Airflow/dbt) is a stub th
 Runtime correlation is explicitly not implemented (fails fast, doesn't fake results). The
 Rust core is not part of the supported path.
 
-- Test suite: `python/tests/`, run with `pytest` from the repo root — **205 tests, 0
-  failing** (verify yourself: `pytest python/tests/ -v`). The web dashboard tests
-  (`test_web_app.py`) are skipped automatically if the optional `web` extra isn't installed.
+- Test suite: `python/tests/`, run with `pytest` from the repo root — **198 tests passing,
+  1 skipped** (verify yourself: `pytest python/tests/ -v`). The skipped test is in
+  `test_web_app.py`, which is skipped automatically if the optional `web` extra isn't
+  installed.
 - Static rules: 33, all wired into `scan` (previously most of the catalog — the
   `dag_advanced.py` rules including secrets detection, and all of `config.py` — was defined
   but never actually invoked by `scan`).

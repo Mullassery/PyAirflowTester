@@ -152,7 +152,9 @@ _TEMPLATES = {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}PyAirflowTester Dashboard{% endblock %}</title>
-<style>""" + _BASE_CSS + """</style>
+<style>"""
+    + _BASE_CSS
+    + """</style>
 </head>
 <body>
 <header>

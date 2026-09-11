@@ -7,9 +7,9 @@ Need help with PyAirflowTester? Here are your options.
 Start with the official documentation:
 
 - **README.md** - Quick start guide and feature overview
-- **DEPENDENCY_INTELLIGENCE_DESIGN.md** - Complete system specification (13 parts)
-- **DEPENDENCY_CACHING_STRATEGY.md** - Production caching guide
-- **COMPLETE_SYSTEM_SUMMARY.md** - Feature matrix and architecture
+- **[docs/archive/DEPENDENCY_INTELLIGENCE_DESIGN.md](docs/archive/DEPENDENCY_INTELLIGENCE_DESIGN.md)** - Complete system specification (13 parts, historical)
+- **[docs/archive/DEPENDENCY_CACHING_STRATEGY.md](docs/archive/DEPENDENCY_CACHING_STRATEGY.md)** - Production caching guide (historical)
+- **[docs/archive/COMPLETE_SYSTEM_SUMMARY.md](docs/archive/COMPLETE_SYSTEM_SUMMARY.md)** - Feature matrix and architecture (historical)
 - **examples/** - Working code examples for all phases
 
 ## Frequently Asked Questions
@@ -51,7 +51,7 @@ A: ~4.2 seconds for 1,000+ DAGs on modern hardware
 A: <500MB for 100,000 nodes
 
 **Q: Can I cache results?**
-A: Yes, see DEPENDENCY_CACHING_STRATEGY.md for multi-layer caching options
+A: Yes, see docs/archive/DEPENDENCY_CACHING_STRATEGY.md (historical) for multi-layer caching options
 
 ### Troubleshooting
 
