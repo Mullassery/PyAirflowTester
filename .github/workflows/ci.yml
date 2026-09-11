@@ -226,18 +226,18 @@ jobs:
         run: |
           pip install sphinx sphinx-rtd-theme
 
-      # This whole job has been scaffolding for docs that were never
-      # actually written -- no docs/ directory, no Sphinx config -- so it
-      # hard-failed on every push to main once the jobs gating it (needs:
-      # [rust-tests, python-tests]) started passing. Guard rather than
-      # build/deploy nothing.
+      # This whole job has been scaffolding for a Sphinx doc site that was
+      # never actually written -- docs/ now exists (it holds archived
+      # historical docs, see docs/archive/), but there's no Sphinx conf.py
+      # or Makefile in it, so `make html` still hard-fails. Guard on the
+      # actual Sphinx marker, not just directory existence.
       - name: Build documentation
         run: |
-          if [ -d "docs" ]; then
+          if [ -f "docs/Makefile" ] && [ -f "docs/conf.py" ]; then
             cd docs
             make html
           else
-            echo "docs/ doesn't exist yet -- this job's Sphinx doc site was never actually set up. Nothing to build."
+            echo "docs/ exists but has no Sphinx conf.py/Makefile -- this job's Sphinx doc site was never actually set up. Nothing to build."
           fi
 
       - name: Deploy to GitHub Pages
