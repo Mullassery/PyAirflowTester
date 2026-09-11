@@ -115,15 +115,13 @@ class SqliteCache:
         self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._conn.execute("PRAGMA synchronous=NORMAL")
-        self._conn.execute(
-            """
+        self._conn.execute("""
             CREATE TABLE IF NOT EXISTS cache_entries (
                 key TEXT PRIMARY KEY,
                 value TEXT NOT NULL,
                 expires_at REAL
             )
-            """
-        )
+            """)
         self._conn.commit()
         self.stats = CacheStats()
 

@@ -18,8 +18,7 @@ from pyairflowtester.dependency_intelligence.runtime_import import (
     parse_dag_via_runtime_import,
 )
 
-_FAKE_AIRFLOW_PACKAGE = textwrap.dedent(
-    """
+_FAKE_AIRFLOW_PACKAGE = textwrap.dedent("""
     class DAG:
         def __init__(self, dag_id):
             self.dag_id = dag_id
@@ -42,8 +41,7 @@ _FAKE_AIRFLOW_PACKAGE = textwrap.dedent(
         def __rshift__(self, other):
             other.upstream_task_ids.add(self.task_id)
             return other
-    """
-)
+    """)
 
 
 @pytest.fixture
@@ -89,9 +87,7 @@ class TestRuntimeImportResolvesDynamicDags:
         """This is exactly the case AirflowDAGParser's static AST parser
         can't see: task_id strings only exist after the loop runs."""
         dag_file = tmp_path / "dynamic_dag.py"
-        dag_file.write_text(
-            textwrap.dedent(
-                """
+        dag_file.write_text(textwrap.dedent("""
                 from airflow.models import DAG, BaseOperator
 
                 dag = DAG(dag_id="dynamic_fanout")
@@ -101,9 +97,7 @@ class TestRuntimeImportResolvesDynamicDags:
                     tasks.append(t)
                 for upstream, downstream in zip(tasks, tasks[1:]):
                     upstream >> downstream
-                """
-            )
-        )
+                """))
 
         dag_id, task_ids, deps = parse_dag_via_runtime_import(str(dag_file))
 
@@ -118,9 +112,7 @@ class TestRuntimeImportResolvesDynamicDags:
 
     def test_resolves_tasks_built_via_factory_function(self, tmp_path, fake_airflow_on_path):
         dag_file = tmp_path / "factory_dag.py"
-        dag_file.write_text(
-            textwrap.dedent(
-                """
+        dag_file.write_text(textwrap.dedent("""
                 from airflow.models import DAG, BaseOperator
 
                 def build_dag():
@@ -131,9 +123,7 @@ class TestRuntimeImportResolvesDynamicDags:
                     return dag
 
                 dag = build_dag()
-                """
-            )
-        )
+                """))
 
         dag_id, task_ids, deps = parse_dag_via_runtime_import(str(dag_file))
 
@@ -161,17 +151,13 @@ class TestRuntimeImportResolvesDynamicDags:
         """A DAG file that mutates its own process (env var) must not affect
         the caller's process -- proof this actually runs in a subprocess."""
         dag_file = tmp_path / "mutates_process.py"
-        dag_file.write_text(
-            textwrap.dedent(
-                """
+        dag_file.write_text(textwrap.dedent("""
                 import os
                 os.environ["PYAIRFLOWTESTER_SANDBOX_CANARY"] = "leaked"
                 from airflow.models import DAG, BaseOperator
                 dag = DAG(dag_id="canary_dag")
                 BaseOperator(task_id="t1", dag=dag)
-                """
-            )
-        )
+                """))
 
         os.environ.pop("PYAIRFLOWTESTER_SANDBOX_CANARY", None)
         dag_id, task_ids, deps = parse_dag_via_runtime_import(str(dag_file))
@@ -181,16 +167,12 @@ class TestRuntimeImportResolvesDynamicDags:
 
     def test_timeout_is_enforced(self, tmp_path, fake_airflow_on_path):
         dag_file = tmp_path / "slow_dag.py"
-        dag_file.write_text(
-            textwrap.dedent(
-                """
+        dag_file.write_text(textwrap.dedent("""
                 import time
                 time.sleep(5)
                 from airflow.models import DAG
                 dag = DAG(dag_id="never_gets_here")
-                """
-            )
-        )
+                """))
 
         dag_id, task_ids, deps = parse_dag_via_runtime_import(str(dag_file), timeout_seconds=0.5)
 
@@ -200,9 +182,7 @@ class TestRuntimeImportResolvesDynamicDags:
 class TestParseDagFileWithFallback:
     def test_uses_static_parser_result_when_it_finds_tasks(self, tmp_path):
         dag_file = tmp_path / "static_dag.py"
-        dag_file.write_text(
-            textwrap.dedent(
-                """
+        dag_file.write_text(textwrap.dedent("""
                 from airflow import DAG
                 from airflow.operators.bash import BashOperator
 
@@ -210,9 +190,7 @@ class TestParseDagFileWithFallback:
                 t1 = BashOperator(task_id='t1', bash_command='echo 1')
                 t2 = BashOperator(task_id='t2', bash_command='echo 2')
                 t1.set_downstream(t2)
-                """
-            )
-        )
+                """))
 
         dag_id, task_ids, deps = parse_dag_file_with_fallback(str(dag_file))
 
@@ -223,17 +201,13 @@ class TestParseDagFileWithFallback:
         self, tmp_path, fake_airflow_on_path
     ):
         dag_file = tmp_path / "dynamic_only.py"
-        dag_file.write_text(
-            textwrap.dedent(
-                """
+        dag_file.write_text(textwrap.dedent("""
                 from airflow.models import DAG, BaseOperator
 
                 dag = DAG(dag_id="fallback_target")
                 for i in range(3):
                     BaseOperator(task_id=f"gen_{i}", dag=dag)
-                """
-            )
-        )
+                """))
 
         dag_id, task_ids, deps = parse_dag_file_with_fallback(str(dag_file))
 
