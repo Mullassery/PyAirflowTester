@@ -29,7 +29,8 @@ How was this tested?
 
 ## Test Coverage
 
-Code coverage remains at 85%+:
+Current baseline is ~74% (`pytest python/tests/ --cov=pyairflowtester`, verified 2026-09-19 —
+re-check this number yourself, it will drift):
 
 - [ ] New code is covered by tests
 - [ ] Coverage not decreased

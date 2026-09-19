@@ -53,7 +53,10 @@ all = [
 
 [project.urls]
 Homepage = "https://github.com/mullassery/pyairflowtester"
-Documentation = "https://pyairflowtester.readthedocs.io"
+# No readthedocs.io project is actually published (the URL that used to be
+# here 404s, and there's no Sphinx conf.py/.readthedocs.yaml in this repo
+# to build one -- see ci.yml's "Deploy Documentation" job). README.md is
+# the real documentation entry point until a real docs site exists.
 Repository = "https://github.com/mullassery/pyairflowtester"
 "Bug Tracker" = "https://github.com/mullassery/pyairflowtester/issues"
 
@@ -89,6 +92,8 @@ target-version = ["py310"]
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+
+[tool.ruff.lint]
 select = ["E", "F", "W", "I"]
 
 [tool.mypy]

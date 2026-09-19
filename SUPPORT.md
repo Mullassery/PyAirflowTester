@@ -17,10 +17,14 @@ Start with the official documentation:
 ### Installation
 
 **Q: Which Python versions are supported?**
-A: Python 3.10, 3.11, 3.12, and 3.13+
+A: Python 3.10, 3.11, 3.12 (this is the actual CI test matrix — see
+`.github/workflows/ci.yml`). 3.13+ is not in CI and not verified.
 
 **Q: Do I need Rust installed?**
-A: No, pre-built wheels include Rust extensions. Only needed if building from source.
+A: No. As of v0.3.0 this ships as a **pure Python** package (`hatchling` build backend, no
+compiled extension). The Rust crate in `src/*.rs` is a separate, unwired experiment — the
+CLI never imports or calls into it (see README "Architecture"). You do not need a Rust
+toolchain to install, run, or develop the supported (Python) parts of this project.
 
 **Q: Can I use this with Airflow 1.x?**
 A: No, Airflow 2.0+ is required.
@@ -44,11 +48,13 @@ A: Impact shows affected nodes. Blast radius includes deployment safety assessme
 
 ### Performance
 
-**Q: How long does graph construction take?**
-A: ~4.2 seconds for 1,000+ DAGs on modern hardware
-
-**Q: What's the memory usage?**
-A: <500MB for 100,000 nodes
+**Q: How long does graph construction take? What's the memory usage?**
+A: Unknown — not measured by the current maintainers. Earlier drafts of this file quoted
+"~4.2 seconds for 1,000+ DAGs" and "<500MB for 100,000 nodes"; these are unverified numbers
+from the original v0.1.0 release announcement (see the note in CHANGELOG.md's `[0.1.0]`
+entry) and have been removed here rather than repeated as current fact. If you need real
+numbers, benchmark against your own DAG/dbt project — there's no included benchmark suite to
+point you to yet.
 
 **Q: Can I cache results?**
 A: Yes, see docs/archive/DEPENDENCY_CACHING_STRATEGY.md (historical) for multi-layer caching options
@@ -59,7 +65,10 @@ A: Yes, see docs/archive/DEPENDENCY_CACHING_STRATEGY.md (historical) for multi-l
 A: Ensure PyAirflowTester is installed: `pip install pyairflowtester`
 
 **Q: Rust compilation errors?**
-A: Use pre-built wheels instead: `pip install pyairflowtester` (no compilation needed)
+A: You should never hit this from a normal install — `pip install pyairflowtester` installs a
+pure Python package, no compilation involved. Rust compilation is only possible if you
+deliberately `maturin develop` the unwired experimental crate in `src/*.rs` (see README
+"Architecture"); it has no effect on the CLI either way.
 
 **Q: CLI commands not recognized?**
 A: Try full path: `python -m pyairflowtester.cli` or reinstall with `pip install --force-reinstall pyairflowtester`
@@ -106,8 +115,9 @@ Want to help? See CONTRIBUTING.md for:
 
 ## Commercial Support
 
-For enterprise support, custom features, or consulting:
-Contact: mullassery@gmail.com
+There is no commercial support offering — this is a small, part-time-maintained
+open-source project (see README.md "Status"), not a company. If you have a specific need,
+email mullassery@gmail.com, but treat any response as best-effort, not an SLA.
 
 ## Code Examples
 

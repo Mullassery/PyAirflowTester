@@ -34,7 +34,10 @@ Enhancement suggestions are tracked as GitHub issues. Include:
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes
 4. Write tests for new functionality
-5. Ensure all tests pass and coverage stays above 85%
+5. Ensure all tests pass and coverage doesn't drop below its current baseline
+   (~71-74% overall as of 2026-09-19, verify with `pytest --cov=pyairflowtester
+   --cov-report=term-missing` — see README.md "Status" for what's thin: `cli.py` and
+   `dependency_intelligence/cli.py` are at 0%)
 6. Commit with clear messages (`git commit -m 'Add amazing feature'`)
 7. Push to the branch (`git push origin feature/amazing-feature`)
 8. Open a Pull Request with a clear description
@@ -42,16 +45,18 @@ Enhancement suggestions are tracked as GitHub issues. Include:
 ## Development Setup
 
 ### Prerequisites
-- Python 3.10+
+- Python 3.10+ (3.10-3.12 are what CI actually tests)
 - Git
-- Rust toolchain (for building Rust extensions)
+- **Rust toolchain: not required.** This ships as a pure Python package; you only need Rust
+  if you're deliberately working on the separate, unwired experimental crate in `src/*.rs`
+  (see README.md "Architecture").
 
 ### Installation
 
 ```bash
 git clone https://github.com/Mullassery/PyAirflowTester.git
 cd PyAirflowTester
-pip install -e ".[dev,otel]"
+pip install -e ".[dev,web]"
 pre-commit install
 ```
 
@@ -89,36 +94,52 @@ mypy python/pyairflowtester
 pre-commit run --all-files
 ```
 
-### Building Wheels
+### Building the actual package (what `pip install pyairflowtester` ships)
+
+The real build backend is `hatchling` (see `pyproject.toml`'s `[build-system]`), not maturin:
 
 ```bash
-# Install build dependencies
-pip install maturin build
-
-# Build wheels
-export PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1
-maturin build --release -o dist --sdist
+pip install build
+python -m build   # produces dist/*.whl and dist/*.tar.gz, pure Python, no Rust involved
 ```
+
+### Building the separate, unwired Rust experiment (optional, not part of the shipped package)
+
+```bash
+pip install maturin
+maturin build --release   # or `maturin develop` to import it locally as pyairflowtester._core
+```
+Nothing in the CLI calls into this even if you build it — see README.md "Architecture".
+Note: on at least macOS arm64, `cargo test`/`cargo build --release` on this crate can fail to
+link (`ld: symbol(s) not found ... _Py_InitializeEx` etc.) because `pyo3`'s
+`extension-module` feature (`Cargo.toml`) deliberately doesn't link against libpython —
+reproduced during the 2026-09-19 pass. `cargo clippy` and `cargo check` are unaffected. See
+ROADMAP_HONEST.md.
 
 ## Project Structure
 
 ```
-pyairflowtester/
-├── python/pyairflowtester/
-│   ├── dependency_intelligence/  # Core dependency graph engine
-│   │   ├── models.py            # Data models
-│   │   ├── graph.py             # Graph algorithms
-│   │   ├── parsers.py           # Dependency parsers
-│   │   ├── analyzers.py         # Phase 1 analysis engines
-│   │   ├── analytics.py         # Phase 2 analytics
-│   │   ├── intelligence.py      # Phase 3 intelligence
-│   │   └── observability.py     # Phase 4 observability
-│   ├── rules/                    # Static analysis rules
-│   ├── cli.py                    # Command-line interface
-│   └── tests/                    # Test suite
-├── src/                          # Rust bindings
-├── examples/                     # Working examples
-└── Documentation/                # Guides and specs
+PyAirflowTester/
+├── python/
+│   ├── pyairflowtester/
+│   │   ├── dependency_intelligence/  # Core dependency graph engine
+│   │   │   ├── models.py             # Data models
+│   │   │   ├── graph.py              # Graph algorithms
+│   │   │   ├── parsers.py            # Dependency parsers
+│   │   │   ├── analyzers.py          # Ownership/schema/SLA/test-coverage analyzers
+│   │   │   ├── analytics.py          # Analytics helpers
+│   │   │   ├── intelligence.py       # Failure prediction, health score, recommendations
+│   │   │   ├── observability.py      # Metrics/alerts/events/dashboards
+│   │   │   └── cli.py                # `dependency ...` subcommands
+│   │   ├── rules/                    # Static analysis rules (AFW/DBT/CFG)
+│   │   ├── web/                      # `pyairflowtester serve` FastAPI app
+│   │   ├── cli.py                    # Main CLI entry point
+│   │   ├── scanner.py, scoring.py, report.py, models.py, analyzer.py
+│   │   └── __init__.py
+│   └── tests/                        # Test suite (sibling of pyairflowtester/, not nested in it)
+├── src/                               # Rust crate — separate, unwired, see above
+├── examples/                          # Working examples
+└── docs/                              # Architecture notes + docs/archive/ (superseded planning docs)
 ```
 
 ## Code Style
@@ -132,7 +153,8 @@ pyairflowtester/
 ## Testing Requirements
 
 - All new features must include tests
-- Maintain 85%+ code coverage
+- Don't drop the existing coverage baseline (~71-74% overall, uneven — see README.md
+  "Status"); there is no enforced 85% target, that number was never accurate
 - Tests should follow naming convention: `test_<feature>_<scenario>`
 - Use pytest fixtures for setup/teardown
 - Mock external dependencies

@@ -1,6 +1,11 @@
 # Changelog
 
 All notable changes to PyAirflowTester are documented in this file.
+Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
+
+## [Unreleased]
+
+No unreleased changes yet.
 
 ## [0.5.0]
 
@@ -129,6 +134,14 @@ never actually wired into `scan` at all.
   `dag_id` parsing).
 
 ## [0.1.0] - 2024-08-02
+
+> **Note added during the 2026-09-19 honesty pass:** the LOC counts, "27x
+> speedup", "85%+ coverage", and "production ready"/"enterprise-grade"
+> language below are the original, self-reported release announcement and
+> were never independently re-verified. Kept as historical record per this
+> project's policy of not deleting past entries, not as a current claim
+> about the codebase. For what is actually verified to work today, see
+> README.md and ROADMAP_HONEST.md.
 
 ### Complete System Release
 
@@ -264,28 +277,12 @@ Initial production release of PyAirflowTester with all four integrated phases.
 - Binary wheel for macOS ARM64
 - Source distribution (.tar.gz)
 
-## Roadmap
-
-### Phase 5: Advanced Features (Weeks 17-20)
-- Real-time streaming integration (Kafka, Pub/Sub)
-- ML-based anomaly detection
-- Predictive maintenance scheduling
-- Cost optimization analysis
-- Data quality scoring
-
-### Phase 6: Enterprise Features (Weeks 21-24)
-- Multi-tenant support
-- Advanced RBAC
-- Compliance reporting (SOX, HIPAA, GDPR)
-- Advanced visualization (Grafana, Tableau)
-- Distributed tracing integration
-
-### Phase 7: Platform Evolution (Weeks 25-28)
-- GraphQL API
-- Webhook system
-- Custom rule engine
-- Third-party integrations
-- Mobile dashboards
+> The "Phase 5/6/7" roadmap that originally appeared here (real-time Kafka/
+> Pub/Sub streaming, multi-tenant RBAC, GraphQL API, etc., on a "Weeks
+> 17-28" schedule) was removed during the 2026-09-19 honesty pass: none of
+> it was ever built, the week-based schedule was never real, and it
+> duplicated/contradicted the actual roadmap. See ROADMAP_HONEST.md for
+> the current, honestly-scoped list of what's not built.
 
 ## Contributors
 
@@ -300,8 +297,6 @@ Initial production release of PyAirflowTester with all four integrated phases.
 
 ## License
 
-Proprietary. See LICENSE file for details.
-
----
-
-PyAirflowTester: Enterprise-grade dependency intelligence for modern data platforms.
+Apache License 2.0. See [LICENSE](LICENSE) file for details. (This entry
+originally said "Proprietary" — wrong as of the 2026-09-06 relicensing to
+Apache-2.0; corrected here on 2026-09-19.)

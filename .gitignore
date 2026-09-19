@@ -1,7 +1,11 @@
 # Rust
 /target/
-Cargo.lock
 **/*.rs.bk
+# Cargo.lock is intentionally committed (not ignored) -- this crate builds
+# a terminal artifact (a PyO3 extension / cdylib via maturin, plus the
+# cargo-audit CI job reads it), not a library meant to be depended on by
+# other crates, so pinning exact dependency versions for reproducible
+# builds is the right default here.
 
 # Python
 __pycache__/
@@ -30,6 +34,7 @@ MANIFEST
 
 # Virtual environments
 venv/
+.venv/
 env/
 ENV/
 

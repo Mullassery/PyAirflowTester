@@ -29,7 +29,7 @@ install:
 	pip install -e .
 
 install-dev:
-	pip install -e ".[dev,otel]"
+	pip install -e ".[dev,web]"
 	pre-commit install
 
 test: test-rust test-python

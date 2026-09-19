@@ -27,19 +27,19 @@ jobs:
           components: clippy
 
       - name: Cache cargo registry
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cargo/registry
           key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Cache cargo index
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cargo/git
           key: ${{ runner.os }}-cargo-git-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Cache cargo build
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: target
           key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
@@ -63,7 +63,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
@@ -86,10 +86,16 @@ jobs:
         run: pytest python/tests/ -v --cov=pyairflowtester --cov-report=xml
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v3
+        # codecov-action v4+ requires CODECOV_TOKEN even for public repos
+        # (tokenless upload was deprecated). No CODECOV_TOKEN secret was
+        # verified to exist in this repo as part of this pass -- continue
+        # on error so a missing/invalid token doesn't fail the whole job.
+        uses: codecov/codecov-action@v4
+        continue-on-error: true
         with:
           files: ./coverage.xml
           flags: python
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   security-scan:
     name: Security Scan
@@ -126,6 +132,22 @@ jobs:
           pip install bandit
           bandit -r python/pyairflowtester || true
 
+      - name: Set up Python for pip-audit
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # Verified locally (2026-09-19) against this project's actual
+      # runtime + dev + web dependency set: "No known vulnerabilities
+      # found". Runs for real, not continue-on-error -- if this starts
+      # failing it means a real advisory showed up.
+      - name: Run pip-audit
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-audit
+          pip install -e ".[dev,web]"
+          pip-audit
+
   build-wheels:
     name: Build Python Wheels
     runs-on: ubuntu-latest
@@ -135,7 +157,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
@@ -174,7 +196,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
@@ -218,7 +240,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
@@ -241,7 +263,7 @@ jobs:
           fi
 
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         if: github.ref == 'refs/heads/main' && hashFiles('docs/_build/html/**') != ''
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}

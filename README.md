@@ -70,18 +70,23 @@ observability). Ships as a pure-Python CLI, with an optional web dashboard.
   you build it yourself (`maturin develop`), but nothing in the CLI path uses it, and it is
   not built or shipped as part of the published package. Treat it as an experiment, not a
   supported acceleration layer.
-- **The `dependency_intelligence` "Phase 3" intelligence engines (`FailurePredictionEngine`,
-  `HealthScoreCalculator`) don't actually consult real test-coverage data, despite the
-  comments suggesting they should.** `FailurePredictionEngine.predict_node_failure` hardcodes
-  `test_count = 0` for every node (so "no test coverage" always contributes to the failure
-  score, regardless of what you've fed `TestCoverageAnalyzer`) and assumes a fixed 30-day
-  failure window. `HealthScoreCalculator._calculate_test_score` always returns the same fixed
-  value (10.0) regardless of the graph. They're importable and exported, but their
-  test-coverage inputs are not wired to the real `TestCoverageAnalyzer` yet — treat their
-  output as illustrative, not measured. Everything else under "Dependency Intelligence" below
-  (ownership, schema evolution, SLA validation, test-coverage analysis via
-  `TestCoverageAnalyzer`, anomaly detection, observability) does operate on real data you feed
-  it.
+- **Correction (2026-09-19): this section previously claimed `FailurePredictionEngine` and
+  `HealthScoreCalculator` hardcode their test-coverage inputs — that claim is out of date and
+  was wrong as of this pass.** Reading `python/pyairflowtester/dependency_intelligence/
+  intelligence.py` directly: `predict_node_failure` (line ~133) calls
+  `self.test_analyzer.analyze_coverage(node_id).total_tests`, and `_calculate_test_score`
+  (line ~437-447) calls the same real `TestCoverageAnalyzer` per node — neither is a hardcoded
+  constant. This is also locked in by a regression test,
+  `test_test_score_varies_with_real_coverage_data` in
+  `python/tests/test_dependency_intelligence_phase2.py`, which asserts the score differs
+  between no/partial/full coverage fixtures (verified passing: `pytest
+  python/tests/test_dependency_intelligence_phase2.py -k test_score_varies -v`). The one
+  real, remaining simplification: `predict_node_failure`'s historical-failure-rate factor
+  still assumes a fixed 30-day window (`days_of_data = 30` in `intelligence.py`) rather than
+  computing it from actual event timestamps — that part of the original claim was accurate.
+  Everything else under "Dependency Intelligence" below (ownership, schema evolution, SLA
+  validation, test-coverage analysis via `TestCoverageAnalyzer`, anomaly detection,
+  observability) operates on real data you feed it.
 
 ## Installation
 
@@ -270,9 +275,16 @@ Runtime correlation is explicitly not implemented (fails fast, doesn't fake resu
 Rust core is not part of the supported path.
 
 - Test suite: `python/tests/`, run with `pytest` from the repo root — **198 tests passing,
-  1 skipped** (verify yourself: `pytest python/tests/ -v`). The skipped test is in
-  `test_web_app.py`, which is skipped automatically if the optional `web` extra isn't
-  installed.
+  1 skipped** with just `pip install -e ".[dev]"` (verify yourself: `pytest python/tests/
+  -v`), or **205 passing, 0 skipped** with `pip install -e ".[dev,web]"` (both verified
+  2026-09-19 on Python 3.11). The skipped test is in `test_web_app.py`, which is skipped
+  automatically if the optional `web` extra isn't installed. Line coverage is ~71-74%
+  overall (`--cov-report=term-missing`), but it's uneven: `cli.py` and
+  `dependency_intelligence/cli.py` (the actual CLI entry points users run) show **0%**
+  coverage — every command is exercised indirectly through the underlying classes, not
+  through the CLI wiring itself, so a broken `click` option or argument-passing bug in the
+  CLI layer would not be caught by the test suite. `report.py` (20%) and `rules/dbt.py`
+  (22%) are also thin. See ROADMAP_HONEST.md for specifics.
 - Static rules: 33, all wired into `scan` (previously most of the catalog — the
   `dag_advanced.py` rules including secrets detection, and all of `config.py` — was defined
   but never actually invoked by `scan`).
