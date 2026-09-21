@@ -5,7 +5,34 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
-No unreleased changes yet.
+### Fixed
+
+- **All 36 mypy errors resolved; `|| true` removed from CI's mypy step** (`ci.yml`) — mypy
+  now actually gates CI instead of always exiting 0.
+- `dependency_intelligence/observability.py`'s `AlertManager.thresholds` was typed
+  `Dict[str, Dict[str, float]]` but actually stores a nested `{"warning": float, "critical":
+  float}` dict per metric type (the runtime code already indexed it correctly); corrected the
+  annotation to `Dict[str, Dict[str, Dict[str, float]]]`.
+- `dependency_intelligence/graph.py`'s `get_critical_path` inner `dfs` helper was declared to
+  return `List[str]` but never returned a value and its result was never used by callers;
+  retyped to `-> None` to match actual behavior.
+- `dependency_intelligence/graph.py`'s `detect_cycles` returned `Any` from the cache instead
+  of the declared `List[List[str]]`; added an explicit cast.
+- `dependency_intelligence/parsers.py`'s `UnifiedGraphBuilder.build_unified_graph` had
+  implicitly-Optional parameters typed as non-Optional (`dag_files: List[str] = None`, etc.),
+  which was also the root cause of a real type-contract mismatch at 8 call sites in
+  `dependency_intelligence/cli.py` and `web/app.py` (`dbt_manifest` passed as `str | None`
+  into a `str`-typed parameter); parameters are now properly `Optional[...]`-typed.
+- `dependency_intelligence/analytics.py`'s `SLAValidator.validate_node` narrowed
+  `sla_target: Optional[str]` with an explicit `is not None` guard before use.
+- `dependency_intelligence/parsers.py`'s DAG/dataset AST parsers now explicitly coerce
+  `ast.Constant.value` to `str` for `dag_id`/`task_id`/dataset `uri` extraction.
+- Missing type annotations added across `rules/dbt.py`, `scanner.py`,
+  `dependency_intelligence/models.py`, `dependency_intelligence/graph.py`,
+  `dependency_intelligence/analytics.py`, `dependency_intelligence/parsers.py` (mechanical,
+  no behavior changes).
+- No regressions: `pytest python/tests/` still 205 passed, `ruff check python/` and `black
+  --check python/` still clean.
 
 ## [0.5.0]
 

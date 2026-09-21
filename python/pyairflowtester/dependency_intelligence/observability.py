@@ -59,7 +59,7 @@ class ExecutionEvent:
     start_time: datetime
     end_time: datetime
     error_message: Optional[str] = None
-    tags: Dict[str, str] = None
+    tags: Optional[Dict[str, str]] = None
 
 
 class MetricsCollector:
@@ -70,7 +70,11 @@ class MetricsCollector:
         self.retention_days = 30
 
     def record_metric(
-        self, metric_type: MetricType, node_id: str, value: float, tags: Dict[str, str] = None
+        self,
+        metric_type: MetricType,
+        node_id: str,
+        value: float,
+        tags: Optional[Dict[str, str]] = None,
     ) -> Metric:
         """Record a metric observation."""
         metric = Metric(
@@ -140,7 +144,8 @@ class AlertManager:
     def __init__(self, graph: DependencyGraph):
         self.graph = graph
         self.alerts: List[Alert] = []
-        self.thresholds: Dict[str, Dict[str, float]] = {}
+        # node_id -> metric_type -> {"warning": float, "critical": float}
+        self.thresholds: Dict[str, Dict[str, Dict[str, float]]] = {}
 
     def set_threshold(
         self, node_id: str, metric_type: str, warning: float, critical: float
@@ -228,7 +233,7 @@ class EventLogger:
         start_time: datetime,
         end_time: datetime,
         error_message: Optional[str] = None,
-        tags: Dict[str, str] = None,
+        tags: Optional[Dict[str, str]] = None,
     ) -> ExecutionEvent:
         """Log a node execution event."""
         event = ExecutionEvent(

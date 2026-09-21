@@ -4,7 +4,7 @@ import ast
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from .models import (
     DependencyGraph,
@@ -50,9 +50,9 @@ class AirflowDAGParser:
             logger.error(f"Syntax error parsing DAG code: {e}")
             return None, [], []
 
-        dag_id = None
-        task_ids = set()
-        dependencies = []
+        dag_id: Optional[str] = None
+        task_ids: Set[str] = set()
+        dependencies: List[Tuple[str, str]] = []
 
         class DAGVisitor(ast.NodeVisitor):
             def visit_Call(self, node):
@@ -62,23 +62,23 @@ class AirflowDAGParser:
                 if isinstance(node.func, ast.Name) and node.func.id == "DAG":
                     # dag_id is idiomatically passed positionally: DAG('my_dag', ...)
                     if node.args and isinstance(node.args[0], ast.Constant):
-                        dag_id = node.args[0].value
+                        dag_id = str(node.args[0].value)
                     elif node.args and isinstance(node.args[0], ast.Str):
-                        dag_id = node.args[0].s
+                        dag_id = str(node.args[0].s)
 
                     for keyword in node.keywords:
                         if keyword.arg == "dag_id" and isinstance(keyword.value, ast.Constant):
-                            dag_id = keyword.value.value
+                            dag_id = str(keyword.value.value)
                         elif keyword.arg == "dag_id" and isinstance(keyword.value, ast.Str):
-                            dag_id = keyword.value.s
+                            dag_id = str(keyword.value.s)
 
                 # Look for task assignments
                 if isinstance(node.func, ast.Name) and "Operator" in node.func.id:
                     for keyword in node.keywords:
                         if keyword.arg == "task_id" and isinstance(keyword.value, ast.Constant):
-                            task_ids.add(keyword.value.value)
+                            task_ids.add(str(keyword.value.value))
                         elif keyword.arg == "task_id" and isinstance(keyword.value, ast.Str):
-                            task_ids.add(keyword.value.s)
+                            task_ids.add(str(keyword.value.s))
 
                 # Look for task dependencies (set_upstream/set_downstream)
                 if isinstance(node.func, ast.Attribute):
@@ -261,8 +261,8 @@ class dbtManifestParser:
     def parse_model_node(node_data: Dict[str, Any]) -> Node:
         """Parse a single dbt model node."""
         return Node(
-            id=node_data.get("unique_id"),
-            name=node_data.get("name"),
+            id=node_data.get("unique_id", ""),
+            name=node_data.get("name", ""),
             type=NodeType.DBT_MODEL,
             owner=node_data.get("meta", {}).get("owner", "dbt"),
             description=node_data.get("description", ""),
@@ -289,8 +289,8 @@ class AirflowDatasetParser:
         except SyntaxError:
             return [], []
 
-        datasets = set()
-        dependencies = []
+        datasets: Set[str] = set()
+        dependencies: List[Tuple[str, str]] = []
 
         class DatasetVisitor(ast.NodeVisitor):
             def visit_Call(self, node):
@@ -298,7 +298,7 @@ class AirflowDatasetParser:
                 if isinstance(node.func, ast.Name) and node.func.id == "Dataset":
                     for keyword in node.keywords:
                         if keyword.arg == "uri" and isinstance(keyword.value, ast.Constant):
-                            datasets.add(keyword.value.value)
+                            datasets.add(str(keyword.value.value))
 
                 # Look for dataset_triggers
                 if isinstance(node.func, ast.Name) and node.func.id == "DAG":
@@ -353,9 +353,9 @@ class UnifiedGraphBuilder:
 
     @staticmethod
     def build_unified_graph(
-        dag_files: List[str] = None,
-        dbt_manifest: str = None,
-        dataset_files: List[str] = None,
+        dag_files: Optional[List[str]] = None,
+        dbt_manifest: Optional[str] = None,
+        dataset_files: Optional[List[str]] = None,
     ) -> DependencyGraph:
         """
         Build a unified dependency graph from multiple sources.

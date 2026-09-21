@@ -3,7 +3,7 @@
 import hashlib
 import logging
 from collections import deque
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, cast
 
 from .cache import TieredCache
 from .models import (
@@ -215,8 +215,9 @@ class DependencyGraphEngine:
             cache_key = f"cycles:{self._graph_content_hash()}"
             cached = self.cache.get(cache_key)
             if cached is not None:
-                self._cycles_cache = cached
-                return cached
+                cached_cycles = cast(List[List[str]], cached)
+                self._cycles_cache = cached_cycles
+                return cached_cycles
 
         cycles = []
         visited = set()
@@ -307,7 +308,7 @@ class DependencyGraphEngine:
 
         for node_id in self.graph.nodes:
             if node_id not in visited:
-                component = set()
+                component: Set[str] = set()
                 dfs(node_id, component)
                 components.append(component)
 
@@ -323,10 +324,10 @@ class DependencyGraphEngine:
         if self.has_cycle():
             logger.warning("Graph has cycles; returning longest acyclic path")
 
-        max_path = []
+        max_path: List[str] = []
         visited = set()
 
-        def dfs(node_id: str, path: List[str]) -> List[str]:
+        def dfs(node_id: str, path: List[str]) -> None:
             nonlocal max_path
             visited.add(node_id)
 

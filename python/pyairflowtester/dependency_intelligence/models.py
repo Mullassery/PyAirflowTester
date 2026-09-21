@@ -142,7 +142,7 @@ class DependencyGraph:
 
     def get_node_count_by_type(self) -> Dict[NodeType, int]:
         """Count nodes by type."""
-        counts = {}
+        counts: Dict[NodeType, int] = {}
         for node in self.nodes.values():
             counts[node.type] = counts.get(node.type, 0) + 1
         return counts

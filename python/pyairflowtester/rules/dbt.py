@@ -90,10 +90,10 @@ class RedundantTestsRule(BaseRule):
 
     def evaluate(self, manifest: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Detect redundant tests."""
-        violations = []
+        violations: List[Dict[str, Any]] = []
 
         # Track test signatures (model + test_type + column)
-        test_signatures = {}
+        test_signatures: Dict[str, List[str]] = {}
 
         if "nodes" in manifest:
             for key, node in manifest["nodes"].items():
@@ -141,7 +141,7 @@ class UntestedModelRule(BaseRule):
 
     def evaluate(self, manifest: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Detect untested public models."""
-        violations = []
+        violations: List[Dict[str, Any]] = []
 
         if "nodes" not in manifest:
             return violations

@@ -71,7 +71,7 @@ class Scanner:
         Returns:
             List of violations found
         """
-        violations = []
+        violations: List[Dict[str, Any]] = []
         logger.info(f"Scanning Airflow configuration at {config_path}")
 
         try:
@@ -141,7 +141,7 @@ class Scanner:
         Returns:
             List of violations found
         """
-        violations = []
+        violations: List[Dict[str, Any]] = []
         logger.info(f"Scanning dbt project in {dbt_path}")
 
         # Look for manifest.json

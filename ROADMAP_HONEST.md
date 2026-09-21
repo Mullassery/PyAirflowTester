@@ -76,26 +76,47 @@ version of "what works today."
   dedicated follow-up**: either feature-gate `extension-module` behind a non-default Cargo
   feature so `cargo test` works out of the box, or explicitly document that Rust-side testing
   requires `maturin develop`-style invocation instead of bare `cargo test`.
-- **mypy: 36 real type errors, invisible in CI.** `ci.yml`'s mypy step is `mypy
-  python/pyairflowtester --ignore-missing-imports || true` — it always exits 0. Re-running it
-  without the `|| true` (verified 2026-09-19) surfaces 36 errors across 9 files, e.g.:
-  - `dependency_intelligence/graph.py:329` — "Missing return statement" (a real code path
-    that can fall through without returning).
-  - `dependency_intelligence/graph.py:219` — "Returning Any from function declared to return
-    list[list[str]]".
-  - `dependency_intelligence/cli.py:50,117,164,207,250,293,332` and `web/app.py:303` (8
-    call sites) — `build_unified_graph`'s `dbt_manifest` parameter is typed `str` but every
-    CLI/web call site passes `str | None` (it's optional at the CLI level) — a real type
-    contract mismatch, not a mypy false positive.
-  - `dependency_intelligence/observability.py:152,171,179,182,190` — a variable typed `float`
-    is later indexed like a dict (`observability.py:171` etc.) — worth a closer look, this
-    pattern usually indicates a real bug, not just a missing annotation.
-  - Remaining ~20 errors are `var-annotated`/`no_implicit_optional` (missing type
-    annotations, implicit-Optional defaults) — lower severity, mechanical fixes.
-  **This needs a dedicated follow-up session**: triage each of the 36 (especially the
-  `observability.py` float/dict one and the missing-return in `graph.py`) for whether they're
-  real bugs or just missing annotations, fix or `# type: ignore` with a reason, then drop the
-  `|| true` so mypy actually gates CI.
+- ~~**mypy: 36 real type errors, invisible in CI.**~~ **Fixed 2026-09-21.** All 36 errors
+  triaged and resolved (`mypy python/pyairflowtester --ignore-missing-imports` is clean); the
+  `|| true` in `ci.yml`'s mypy step has been removed, so mypy now actually gates CI. Notable
+  fixes:
+  - `dependency_intelligence/graph.py:329` (`get_critical_path`'s inner `dfs`) — was
+    annotated to return `List[str]` but never returned a value (mutated a `nonlocal` instead)
+    and its return value was never used by any caller; retyped to `-> None` to match actual
+    behavior, no logic change.
+  - `dependency_intelligence/graph.py:219` (`detect_cycles`) — cache round-trips through
+    `Optional[Any]`; added an explicit `cast(List[List[str]], cached)` rather than silently
+    returning `Any`.
+  - `dependency_intelligence/observability.py:152` (`AlertManager.thresholds`) — this **was**
+    a real bug in the type annotation (not the runtime logic): declared
+    `Dict[str, Dict[str, float]]` but `set_threshold` actually stores a nested
+    `{"warning": float, "critical": float}` dict per metric type, and `check_threshold`
+    already correctly indexed it that way (`thresholds["critical"]`). Corrected the
+    annotation to `Dict[str, Dict[str, Dict[str, float]]]` to match the real structure — no
+    behavior change, the runtime code was already right, only the type was lying.
+  - `dependency_intelligence/cli.py:50,117,164,207,250,293,332` and `web/app.py:303` (8 call
+    sites) — fixed by correcting `UnifiedGraphBuilder.build_unified_graph`'s signature
+    (`dependency_intelligence/parsers.py:355-359`) from `dag_files: List[str] = None` /
+    `dbt_manifest: str = None` / `dataset_files: List[str] = None` (all implicitly-Optional,
+    the actual source of the mismatch) to properly `Optional[...]`-typed parameters.
+  - `dependency_intelligence/analytics.py:253` (`SLAValidator.validate_node`) — `sla_target`
+    is `Optional[str]` from a `.get()`, but is only passed to `_is_compliant` (which requires
+    `str`) in the branch where `has_sla` is already known `True`; mypy can't see that
+    correlation, so added an explicit `sla_target is not None` guard (behavior-preserving,
+    since `has_sla` already guarantees it).
+  - `dependency_intelligence/parsers.py` — `AirflowDAGParser`/`AirflowDatasetParser` read
+    `ast.Constant.value`, typed by typeshed as a broad literal union, and stored it directly
+    into `dag_id`/`task_ids`/`datasets` without normalizing to `str`; added explicit `str(...)`
+    conversions at each site (`dag_id`, `task_id`, dataset `uri`) plus a `unique_id`/`name`
+    default of `""` in the unused `parse_model_node` helper (only caller is
+    `src/dbt_parser.rs`'s independent Rust implementation, so no live Python code path was
+    affected either way).
+  - Remaining ~20 errors were `var-annotated`/`no_implicit_optional` (missing type
+    annotations, implicit-Optional defaults) across `rules/dbt.py`, `scanner.py`, `models.py`,
+    `analytics.py`, `graph.py` — mechanical annotation fixes, no behavior change.
+  Verified: `mypy python/pyairflowtester --ignore-missing-imports` clean, `ruff check
+  python/` clean, `black --check python/` clean, full `pytest python/tests/` still 205
+  passed (no regressions from the annotation/typing changes).
 - **`cargo audit` finds real advisories** (already surfaced by a prior session, still
   unresolved as of this pass, confirmed still present): sqlx 0.7.4 (RUSTSEC-2024-0363, needs
   >=0.8.1) and a rustls-related advisory (RUSTSEC-2026-0098), plus 2 unmaintained-crate
@@ -169,8 +190,7 @@ version of "what works today."
 - **Converting `.github/ISSUE_TEMPLATE/*.md` to YAML forms** — not done; the existing
   Markdown templates are present and reasonably structured, not missing, so this wasn't a
   "genuinely appropriate" change to force through in a documentation-focused pass.
-- **Fixing the 36 mypy errors or the PyO3 linker issue directly** — deliberately left as
-  documented findings (bucket 3) rather than fixed, per this pass's scope: these are
-  non-trivial code changes (one needs per-error triage for real-bug-vs-annotation, the other
-  needs a Cargo feature-gating decision) that deserve a dedicated follow-up session, not a
-  drive-by fix folded into a documentation pass.
+- **Fixing the PyO3 linker issue** — deliberately left as a documented finding (bucket 3),
+  not fixed: it needs a Cargo feature-gating decision (or a documented `maturin develop`-only
+  testing workflow) that isn't a drive-by quick fix. (The 36 mypy errors, by contrast, were
+  triaged and fixed in a later quick-fix pass on 2026-09-21 — see bucket 3's mypy entry.)

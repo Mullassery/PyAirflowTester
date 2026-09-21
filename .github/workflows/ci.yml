@@ -80,7 +80,7 @@ jobs:
         run: black --check python/
 
       - name: Type check with mypy
-        run: mypy python/pyairflowtester --ignore-missing-imports || true
+        run: mypy python/pyairflowtester --ignore-missing-imports
 
       - name: Run pytest
         run: pytest python/tests/ -v --cov=pyairflowtester --cov-report=xml

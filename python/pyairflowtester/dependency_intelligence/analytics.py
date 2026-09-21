@@ -250,7 +250,7 @@ class SLAValidator:
             compliance_status = "no_sla"
         elif not actual:
             compliance_status = "pending"
-        elif self._is_compliant(sla_target, actual):
+        elif sla_target is not None and self._is_compliant(sla_target, actual):
             compliance_status = "compliant"
         else:
             compliance_status = "violated"
@@ -317,7 +317,7 @@ class TestCoverageAnalyzer:
         tests = self.test_assignments.get(node_id, [])
 
         # Count test types
-        test_types = {}
+        test_types: Dict[str, int] = {}
         for test in tests:
             parts = test.split(":")
             ttype = parts[1] if len(parts) > 1 else "unit"
