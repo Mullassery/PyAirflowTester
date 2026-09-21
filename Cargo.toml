@@ -14,7 +14,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 pyo3 = { version = "0.20", features = ["extension-module"] }
 tokio = { version = "1.35", features = ["full"] }
-sqlx = { version = "0.7", features = ["postgres", "json", "runtime-tokio-rustls"] }
+sqlx = { version = "0.8", features = ["postgres", "json", "runtime-tokio-rustls"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 regex = "1.10"
