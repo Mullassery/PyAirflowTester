@@ -5,6 +5,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-09-22
+
 ### Fixed
 
 - **All 36 mypy errors resolved; `|| true` removed from CI's mypy step** (`ci.yml`) — mypy
