@@ -150,7 +150,10 @@ class ExpensiveImportsRule(BaseRule):
         violations = []
 
         for module in self.expensive_modules:
-            pattern = rf"^import\s+{module}|^from\s+{module}\s+import"
+            # \b after the module name matters: without it, "import pandas"
+            # also matches inside "import pandasql", "import numpydoc", etc.,
+            # misreporting an unrelated package as the expensive one.
+            pattern = rf"^import\s+{module}\b|^from\s+{module}\b\s+import"
             if re.search(pattern, source_code, re.MULTILINE):
                 violations.append(
                     {

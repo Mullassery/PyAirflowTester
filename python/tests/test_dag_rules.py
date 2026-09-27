@@ -90,6 +90,22 @@ class TestExpensiveImportsRule:
         violations = rule.evaluate("import os\n", "test.py")
         assert violations == []
 
+    def test_does_not_false_positive_on_similarly_named_packages(self):
+        """Regression test: the pattern used to be missing a trailing \\b,
+        so `import pandasql` matched the "pandas" prefix and was
+        misreported as an "Expensive import detected: pandas" violation
+        (same for numpydoc/numpy and torchvision/torch)."""
+        rule = ExpensiveImportsRule()
+        source = "import pandasql\nimport numpydoc\nimport torchvision\n"
+        violations = rule.evaluate(source, "test.py")
+        assert violations == []
+
+    def test_still_flags_real_module_with_submodule_import(self):
+        """Make sure the \\b fix doesn't break the real, intended case."""
+        rule = ExpensiveImportsRule()
+        violations = rule.evaluate("from pandas import DataFrame\n", "test.py")
+        assert any(v["affected_resource"] == "pandas" for v in violations)
+
 
 class TestParseTimeRule:
     def test_flags_loop_based_dag_generation(self):
