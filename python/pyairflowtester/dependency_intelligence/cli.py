@@ -44,11 +44,19 @@ def build(dags: Optional[str], dbt_manifest: Optional[str], datasets: Optional[s
         dag_path = Path(dags)
         dag_files = list(dag_path.glob("**/*.py"))
 
+    # Collect dataset files. `--datasets` used to be accepted here and then
+    # silently discarded (dataset_files was hardcoded to []), so passing it
+    # had zero effect on the built graph.
+    dataset_files = []
+    if datasets:
+        dataset_path = Path(datasets)
+        dataset_files = list(dataset_path.glob("**/*.py"))
+
     # Build unified graph
     graph = UnifiedGraphBuilder.build_unified_graph(
         dag_files=[str(f) for f in dag_files],
         dbt_manifest=dbt_manifest,
-        dataset_files=[],
+        dataset_files=[str(f) for f in dataset_files],
     )
 
     # Display stats
