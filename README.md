@@ -223,6 +223,57 @@ builder = DashboardBuilder(graph, metrics, alerts, events)
 dashboard = builder.build_health_dashboard()
 ```
 
+## vs native Airflow validation
+
+No single third-party OSS tool covers this exact combined niche (Airflow
+DAGs + dbt models, silent risk patterns), so the fair baseline is what
+Airflow itself already validates natively (`DagBag` import-time checks —
+the same mechanism `airflow dags list-import-errors` uses). Tested both
+against a real, deliberately risky DAG file with four genuine planted
+issues: a hardcoded Stripe-style API key (`STRIPE_API_KEY = "sk_live_..."`),
+zero SLAs set on any task, a real 3-task circular dependency
+(`t1 >> t2 >> t3 >> t1`), and `catchup=True` with no bounded backfill —
+plus a real 2-model dbt manifest with no tests on either model.
+
+| | `pyairflowtester scan` | Native Airflow (`DagBag`) |
+|---|---|---|
+| Runtime | 72ms | 311ms |
+| Circular dependency | **Caught** (AFW001, critical) | **Caught** — but fatally: the DAG fails to import at all (`AirflowDagCycleException`), so nothing else about this file is ever checked |
+| Hardcoded secret | **Caught** (AFW009, critical) — see bug below | Not checked — Airflow has no concept of this |
+| `catchup=True` without backfill bound | **Caught** (AFW006, high) | Not checked |
+| Default pool usage | **Caught** (AFW007, medium) | Not checked |
+| Missing SLA | Not checked — see limitation below | Not checked |
+| dbt models with no tests | **Caught**, both models (DBT001, high) | N/A — dbt isn't Airflow's concern at all |
+
+**What this actually shows:** native Airflow's validation is all-or-nothing
+— a single fatal issue (like the cycle here) blocks the DAG from loading
+at all, so you get exactly one error and nothing else. `pyairflowtester`'s
+static source analysis surfaced all 6 real issues simultaneously, several
+of which (secrets, pool sizing, catchup config, dbt test coverage) native
+Airflow has no mechanism to check at all, cycle or no cycle — that's the
+real value-add.
+
+**Real bug found and fixed:** `SecretsInCodeRule` (`AFW009`) missed my
+planted secret entirely on the first run. Root cause,
+`python/pyairflowtester/rules/dag_advanced.py`: the regex patterns used a
+bare `re.search` with no `re.IGNORECASE`, so `STRIPE_API_KEY = "..."` (a
+very common Python convention — an uppercase module-level constant) never
+matched the lowercase `api_key\s*=` pattern. Fixed by adding
+`re.IGNORECASE`; regression test added
+(`test_hardcoded_secret_with_uppercase_variable_name`).
+
+**Real limitation found, not fixed (existing behavior is intentionally
+tested):** `MissingSLARule` (`AFW002`) never fired on my planted
+no-SLA-anywhere DAG, because the rule only evaluates DAGs whose **filename**
+contains the literal substring `"production"` — my file was named
+`risky_pipeline.py`. This is existing, deliberately-tested behavior (see
+`test_ignores_non_production_dag` in `test_dag_rules.py`), not an
+oversight, so it wasn't changed here — but it's worth knowing that in
+practice this means missing-SLA detection silently does nothing on the
+large majority of real DAG files, which are rarely named with the literal
+word "production" in them regardless of whether they actually run in
+production.
+
 ## Web Dashboard: `serve`
 
 `DashboardBuilder` above returns plain dicts for programmatic use. `pyairflowtester serve`

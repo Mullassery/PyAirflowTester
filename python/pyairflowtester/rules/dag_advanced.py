@@ -187,7 +187,7 @@ class SecretsInCodeRule(BaseRule):
         ]
 
         for pattern, secret_type in secret_patterns:
-            if re.search(pattern, source_code):
+            if re.search(pattern, source_code, re.IGNORECASE):
                 violations.append(
                     {
                         "rule_id": self.id,

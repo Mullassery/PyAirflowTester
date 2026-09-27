@@ -100,6 +100,19 @@ class TestSecretsInCodeRule:
         violations = rule.evaluate(source_code, "test.py")
         assert len(violations) == 0
 
+    def test_hardcoded_secret_with_uppercase_variable_name(self):
+        """Regression test found via real-world benchmarking with a
+        deliberately-planted secret in a real DAG file: the secret patterns
+        used a bare re.search with no re.IGNORECASE, so an ALL_CAPS constant
+        name (a very common Python convention for module-level secrets,
+        e.g. STRIPE_API_KEY = "...") never matched, silently missing the
+        exact kind of hardcoded secret this rule exists to catch."""
+        rule = SecretsInCodeRule()
+        source_code = 'STRIPE_API_KEY = "not-a-real-key-just-a-fake-test-value-123"'
+        violations = rule.evaluate(source_code, "test.py")
+        assert len(violations) > 0
+        assert violations[0]["rule_id"] == "AFW009"
+
 
 class TestRetryConfigurationRule:
     """Test retry configuration detection."""
