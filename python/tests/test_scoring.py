@@ -18,10 +18,11 @@ class TestScorer:
         assert len(scorer.severity_weights) == 5
 
     def test_risk_score_no_violations(self, scorer):
-        """Test risk score with no violations."""
+        """A clean scan (no violations) is zero risk, not maximum risk."""
         violations = []
         score = scorer.calculate_risk_score(violations)
-        assert score == 100.0
+        assert score == 0.0
+        assert scorer.categorize_risk(score) == "low"
 
     def test_risk_score_with_violations(self, scorer):
         """Test risk score with violations."""
@@ -32,6 +33,25 @@ class TestScorer:
         ]
         score = scorer.calculate_risk_score(violations)
         assert 0 <= score <= 100
+
+    def test_risk_score_increases_with_severity(self, scorer):
+        """More severe violations must score HIGHER risk, not lower.
+
+        Regression test: `calculate_risk_score` previously computed
+        `base_risk = (1.0 - avg_severity) * 100.0`, which is inverted --
+        a set of only "critical" violations scored 0.0 ("low" risk) while
+        a single "info" violation scored ~99 ("critical" risk). Real risk
+        must move in the same direction as violation severity.
+        """
+        critical_violations = [{"severity": "critical"} for _ in range(10)]
+        info_violations = [{"severity": "info"}]
+
+        critical_score = scorer.calculate_risk_score(critical_violations)
+        info_score = scorer.calculate_risk_score(info_violations)
+
+        assert critical_score > info_score
+        assert scorer.categorize_risk(critical_score) == "critical"
+        assert scorer.categorize_risk(info_score) == "low"
 
     def test_aggregate_by_severity(self, scorer):
         """Test aggregation by severity."""

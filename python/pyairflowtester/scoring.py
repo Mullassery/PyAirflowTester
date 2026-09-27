@@ -25,7 +25,7 @@ class Scorer:
             Risk score (0-100)
         """
         if not violations:
-            return 100.0
+            return 0.0
 
         total_severity = sum(
             self.severity_weights.get(v.get("severity", "info"), 0) for v in violations
@@ -34,7 +34,14 @@ class Scorer:
         avg_severity = total_severity / len(violations)
         violation_count_factor = min(len(violations) / 10.0, 1.0)
 
-        base_risk = (1.0 - avg_severity) * 100.0
+        # Higher average severity must produce a HIGHER risk score --
+        # `categorize_risk` (and every caller: the `score` CLI command,
+        # README's "Overall Risk" display) treats a bigger number as worse.
+        # This used to be `(1.0 - avg_severity) * 100.0`, which is inverted:
+        # a violation set made entirely of "critical" findings (weight 1.0)
+        # scored 0.0 ("low" risk), while a single "info" finding (weight
+        # 0.1) scored ~99 ("critical" risk) -- see CHANGELOG for details.
+        base_risk = avg_severity * 100.0
         adjusted_risk = base_risk * (1.0 + violation_count_factor)
 
         return min(adjusted_risk, 100.0)
