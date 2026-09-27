@@ -7,13 +7,29 @@ suite, starting `pyairflowtester serve` and hitting its routes, running `actionl
 not carried forward from old docs without verification. See README.md for the user-facing
 version of "what works today."
 
+**2026-09-27 deep bug-hunt pass**: read every module in `python/pyairflowtester/` line by
+line tracing real data flow (not linting/grepping), verified each suspicion with a concrete
+reproduction before treating it as real, and fixed what was trivial with a regression test.
+Found and fixed four real bugs (see CHANGELOG's `[Unreleased]` section for full detail): an
+**inverted risk-score formula** in `scoring.py` (worse violations produced a *lower* score;
+a clean scan scored the maximum "critical" rating), a dataset-URI extraction bug that missed
+the idiomatic `Dataset("uri")` positional form entirely (masked by a tautological test
+assertion), a CLI option (`dependency build --datasets`) that was silently discarded, and a
+regex missing a word boundary that misreported `pandasql`/`numpydoc`/`torchvision` imports as
+`pandas`/`numpy`/`torch`. Two further real issues were found, verified, and are documented
+below (not fixed) because fixing them properly is a design decision, not a drive-by patch:
+`HealthScoreCalculator._calculate_sla_score`'s formula and the `score --compare` no-op.
+
 ## 1. Built and tested (verified working)
 
 - `pyairflowtester scan/rules/score` and `dependency build/impact/lineage/blast-radius/
   detect-cycles/detect-orphans/risk-score` — 205 tests pass (`pip install -e ".[dev,web]"`;
   198 pass / 1 skipped without the `web` extra), verified by running `pytest python/tests/
   -v` myself on Python 3.11.16, and by running `pyairflowtester scan`/`rules` against
-  `examples/` directly.
+  `examples/` directly. (2026-09-27: now 205 tests / 204 pass, 1 skipped without `web`,
+  after the bug-hunt pass above added 6 regression tests; re-ran `ruff check python/`,
+  `black --check python/`, and `mypy python/pyairflowtester --ignore-missing-imports` too —
+  all still clean.)
 - `pyairflowtester serve` — started it for real (`pyairflowtester serve --dags examples/
   --port 8099`), confirmed `GET /` and `GET /health` both return HTTP 200 with real rendered
   HTML (not JSON), graph built with 7 nodes from `examples/`.
@@ -41,7 +57,40 @@ version of "what works today."
   exit-code bug in the CLI layer itself would not be caught by the test suite. Manually
   running a handful of commands (`scan`, `rules`, `serve`) during this pass worked, but that
   is not the same as coverage. **Worth a dedicated follow-up**: add `CliRunner`-based tests
-  (click provides one) for each subcommand's argument parsing and exit codes.
+  (click provides one) for each subcommand's argument parsing and exit codes. (2026-09-27:
+  one concrete instance of exactly this risk was found and fixed this pass — `dependency
+  build`'s `--datasets` option was accepted by click and silently discarded; see CHANGELOG.
+  A test now covers that one path; the other CLI commands are still untested at this layer.)
+- **`cli.py`'s `score --compare <branch>` is a complete no-op beyond printing the branch name
+  back** (`python/pyairflowtester/cli.py`, the `score` command, `if compare: console.print(...)`
+  — that's the entire implementation). Verified 2026-09-27: `pyairflowtester score . --compare
+  main` and `pyairflowtester score . --compare this-branch-does-not-exist-xyz` both produce
+  byte-identical scoring output (only the printed line differs) and both exit 0 — there is no
+  git checkout, no baseline scan, no diff, and no validation that the named branch even
+  exists. This directly contradicts README's "Use cases" section, which claims `score
+  --compare main` "catches a PR that raises risk relative to the base branch" — that
+  capability does not exist. The README claim has been corrected to say so plainly. Building
+  the real feature (checkout/read the target ref's DAG files via git, score them too, diff)
+  is a genuine feature, not a one-line fix, so it's left as a documented gap rather than
+  patched here.
+- **`HealthScoreCalculator._calculate_sla_score`** (`dependency_intelligence/intelligence.py`,
+  `_calculate_sla_score`) **is mathematically degenerate and never reflects real SLA data.**
+  The formula is `(critical / max(1, critical)) * 10`, where `critical` is just the count of
+  CRITICAL-severity nodes — dividing a number by itself. Verified 2026-09-27: this returns
+  exactly `10.0` for *any* graph with one or more critical nodes, and exactly `0.0` for a
+  graph with none, regardless of whether any of those nodes actually has an SLA defined,
+  met, or violated. The real `SLAValidator` class (`dependency_intelligence/analytics.py`)
+  that tracks actual SLA definitions/compliance exists but is never wired into
+  `HealthScoreCalculator` at all — `_calculate_sla_score` doesn't take one as input. This
+  silently inflates `HealthScore.overall_score` (and therefore `get_health_summary()`'s
+  user-facing "Excellent/Good/Fair/Poor" status, shown in `pyairflowtester serve`'s `/health`
+  page) by a flat +10 points for any graph containing a critical node, independent of SLA
+  reality. No existing test caught this: `test_calculate_health_score` only asserts
+  `0.0 <= score.overall_score <= 100.0` and equivalent range checks on two other components,
+  never on `sla_score` itself. Fixing this for real requires deciding how SLA
+  definitions/compliance actually get attached to a `Node` (a `metadata` convention? an
+  injected `SLAValidator`?) — an architectural decision, not a drive-by patch, so it's
+  documented here rather than fixed.
 - **`report.py`: 20% coverage** (`python/pyairflowtester/report.py:31-216` mostly
   uncovered) — HTML/SARIF/JSON report rendering is exercised only incidentally.
 - **`rules/dbt.py`: 22% coverage** (lines 36-77, 93-128, 144-194 uncovered) — the three dbt

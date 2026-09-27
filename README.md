@@ -21,8 +21,10 @@ observability). Ships as a pure-Python CLI, with an optional web dashboard.
 ## Use cases
 
 - **Gating CI on Airflow/dbt risk** — `pyairflowtester scan --format sarif`
-  feeds GitHub code scanning directly; `score --compare main` catches a PR
-  that raises risk relative to the base branch.
+  feeds GitHub code scanning directly, and `pyairflowtester score` gives a single
+  0-100 risk number you can threshold on in a CI step. `score --compare <branch>` is
+  accepted but is **not implemented** today — it prints the branch name back and does
+  nothing else (no checkout, no baseline scan, no diff); see ROADMAP_HONEST.md.
 - **Finding blast radius before a deploy** — `dependency blast-radius -n
   <node_id>` answers "is this safe to ship" from a real dependency graph,
   not a guess.
@@ -293,7 +295,7 @@ Rust core is not part of the supported path.
 
 ```bash
 pyairflowtester scan . --dags dags/ --dbt dbt/ --airflow-cfg airflow.cfg --format html
-pyairflowtester score . --compare main
+pyairflowtester score . --compare main  # --compare is currently a no-op, see ROADMAP_HONEST.md
 pyairflowtester rules --category reliability --severity critical
 pyairflowtester dependency build --dags dags/ --dbt-manifest manifest.json
 pyairflowtester dependency impact <node_id> --depth 10

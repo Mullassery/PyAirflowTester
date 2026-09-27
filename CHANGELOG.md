@@ -5,6 +5,48 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **`Scorer.calculate_risk_score` (`scoring.py`) had its severity-to-risk direction
+  inverted — the core formula behind the `pyairflowtester score` command.** A violation
+  set made entirely of `critical`-severity findings scored **0.0/100 ("low" risk)**, while
+  a single `info`-severity finding scored **~99/100 ("critical" risk)** — worse violations
+  produced a *lower* risk score. A clean scan with zero violations scored **100.0
+  ("critical")**, the worst possible rating for a project with nothing wrong. Root cause:
+  `base_risk = (1.0 - avg_severity) * 100.0` (inverted) plus `if not violations: return
+  100.0` (also inverted), while `categorize_risk` and every caller (the CLI's "Overall
+  Risk" display, README's CI-gating use case) assume higher score = higher risk. Fixed to
+  `base_risk = avg_severity * 100.0` and a no-violations score of `0.0`. The existing test
+  (`test_risk_score_no_violations`) asserted the old, wrong behavior (`score == 100.0`) and
+  has been corrected; `test_risk_score_with_violations` only asserted `0 <= score <= 100`,
+  which passes regardless of direction and didn't catch this. Added
+  `test_risk_score_increases_with_severity` to assert the correct direction going forward.
+- **`AirflowDatasetParser.parse_dataset_connections` (`dependency_intelligence/parsers.py`)
+  never detected the idiomatic positional form `Dataset("s3://...")`** — only the rarer
+  `Dataset(uri="...")` keyword form, via the same bug already fixed for `DAG()`'s `dag_id`
+  in v0.3.0 but never applied to `Dataset`'s `uri`. The existing regression test used
+  `Dataset("s3://bucket/path")` (positional) as its sample input but asserted `len(datasets)
+  > 0 or True` — a tautology that passes regardless of what the parser returns, so it never
+  caught that the parser returned an empty list for its own test fixture. Fixed to handle
+  both positional and keyword forms; the test now asserts the real, non-empty result.
+- **`dependency_intelligence/cli.py`'s `build` command's `--datasets` option was accepted by
+  click and then silently discarded** — the function body always called
+  `UnifiedGraphBuilder.build_unified_graph(..., dataset_files=[])` regardless of what
+  `--datasets` pointed at, so passing it had zero effect and no error. Wired it through the
+  same way `--dags` already was.
+- **`AirflowDatasetParser.build_dataset_graph`'s dataset node IDs used Python's built-in
+  `hash()`** (`f"dataset_{hash(dataset_uri)}"`), which is randomized per-process
+  (`PYTHONHASHSEED`) unless pinned — the same dataset URI got a different node ID on every
+  separate CLI invocation, which would silently break anything expecting a stable ID for the
+  same input across process runs (e.g. diffing two graph snapshots for drift). This was
+  latent/unreachable before the `--datasets` fix above (nothing wired dataset files into a
+  real command path); fixed to a stable `hashlib.sha256`-based ID, the same technique
+  `DependencyGraphEngine._graph_content_hash` already uses for exactly this reason.
+- **`rules/dag.py`'s `ExpensiveImportsRule` (AFW003) regex was missing a trailing `\b`** —
+  `import pandasql`, `import numpydoc`, and `import torchvision` were all misreported as
+  the expensive imports "pandas", "numpy", and "torch" respectively, because the pattern
+  matched on the module name as a plain substring prefix. Added the missing word boundary.
+
 ## [0.5.1] - 2026-09-22
 
 ### Fixed
