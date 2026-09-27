@@ -1,6 +1,7 @@
 """Parsers for different dependency sources (Airflow, dbt, datasets)."""
 
 import ast
+import hashlib
 import json
 import logging
 from pathlib import Path
@@ -294,11 +295,22 @@ class AirflowDatasetParser:
 
         class DatasetVisitor(ast.NodeVisitor):
             def visit_Call(self, node):
-                # Look for Dataset() instantiation
+                # Look for Dataset() instantiation. `uri` is idiomatically
+                # passed positionally (Dataset("s3://...")), same as DAG's
+                # dag_id -- only checking node.keywords missed the common
+                # case entirely and only matched the rarer Dataset(uri=...)
+                # form.
                 if isinstance(node.func, ast.Name) and node.func.id == "Dataset":
+                    if node.args and isinstance(node.args[0], ast.Constant):
+                        datasets.add(str(node.args[0].value))
+                    elif node.args and isinstance(node.args[0], ast.Str):
+                        datasets.add(str(node.args[0].s))
+
                     for keyword in node.keywords:
                         if keyword.arg == "uri" and isinstance(keyword.value, ast.Constant):
                             datasets.add(str(keyword.value.value))
+                        elif keyword.arg == "uri" and isinstance(keyword.value, ast.Str):
+                            datasets.add(str(keyword.value.s))
 
                 # Look for dataset_triggers
                 if isinstance(node.func, ast.Name) and node.func.id == "DAG":
@@ -333,8 +345,18 @@ class AirflowDatasetParser:
                 datasets, deps = AirflowDatasetParser.parse_dataset_connections(source_code)
 
                 for dataset_uri in datasets:
+                    # Python's built-in hash() is randomized per-process
+                    # (PYTHONHASHSEED) unless explicitly pinned, so the same
+                    # dataset URI got a different node ID on every separate
+                    # CLI invocation -- breaking any code (e.g.
+                    # DriftDetectionEngine comparing a saved graph snapshot
+                    # against a freshly-built one) that expects a node's ID
+                    # to be stable for the same input across process runs.
+                    # A content hash (same technique already used by
+                    # DependencyGraphEngine._graph_content_hash) is stable.
+                    stable_id = hashlib.sha256(dataset_uri.encode("utf-8")).hexdigest()[:16]
                     node = Node(
-                        id=f"dataset_{hash(dataset_uri)}",
+                        id=f"dataset_{stable_id}",
                         name=dataset_uri,
                         type=NodeType.DATASET,
                         owner="airflow",

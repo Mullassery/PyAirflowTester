@@ -296,7 +296,15 @@ class TestAirflowDatasetParser:
     """Test Airflow dataset parser."""
 
     def test_parse_dataset_connections(self):
-        """Test parsing dataset connections."""
+        """Test parsing dataset connections.
+
+        Regression test: this previously asserted `len(datasets) > 0 or
+        True`, a tautology that passes regardless of what the parser
+        returns. It was masking a real bug -- `Dataset("s3://bucket/path")`
+        (the idiomatic positional form, exactly as used in this test's own
+        sample code) was never detected because the parser only checked
+        `Dataset(uri=...)` keyword calls.
+        """
         code = """
 from airflow import DAG
 from airflow.datasets import Dataset
@@ -309,8 +317,19 @@ dag = DAG('dataset_dag', datasets=[dataset])
 
         datasets, deps = AirflowDatasetParser.parse_dataset_connections(code)
 
-        # Should find dataset URI
-        assert len(datasets) > 0 or True  # Dataset parsing may be basic
+        assert datasets == ["s3://bucket/path"]
+
+    def test_parse_dataset_connections_keyword_form(self):
+        """Test parsing dataset connections when uri= is passed as a keyword."""
+        code = """
+from airflow.datasets import Dataset
+
+dataset = Dataset(uri="s3://bucket/other")
+"""
+
+        datasets, deps = AirflowDatasetParser.parse_dataset_connections(code)
+
+        assert datasets == ["s3://bucket/other"]
 
     def test_parse_invalid_code(self):
         """Test parsing invalid Python code."""
@@ -320,6 +339,52 @@ dag = DAG('dataset_dag', datasets=[dataset])
 
         assert datasets == []
         assert deps == []
+
+    def test_build_dataset_graph_node_ids_are_stable_across_processes(self):
+        """Dataset node IDs must be deterministic, not process-random.
+
+        Regression test: node IDs were built as `f"dataset_{hash(uri)}"`.
+        Python's built-in `hash()` for strings is randomized per-process
+        (PYTHONHASHSEED) unless pinned, so the same dataset URI got a
+        different node ID every time a separate CLI invocation parsed it --
+        breaking anything that expects a node's ID to be stable for the
+        same input across process runs (e.g. diffing two graph snapshots
+        for drift). This asserts the ID for a fixed URI is a stable content
+        hash, not `hash()`'s randomized value, by checking it's identical
+        across two independent subprocess invocations.
+        """
+        import subprocess
+        import sys
+        import tempfile
+
+        code = 'from airflow.datasets import Dataset\nDataset("s3://bucket/stable-check")\n'
+        script = (
+            "import sys; sys.path.insert(0, 'python'); "
+            "from pyairflowtester.dependency_intelligence.parsers import AirflowDatasetParser; "
+            "g = AirflowDatasetParser.build_dataset_graph([sys.argv[1]]); "
+            "print(list(g.nodes.keys())[0])"
+        )
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+            f.write(code)
+            dag_file = f.name
+
+        try:
+            outputs = [
+                subprocess.run(
+                    [sys.executable, "-c", script, dag_file],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                    cwd=Path(__file__).resolve().parents[2],
+                ).stdout.strip()
+                for _ in range(2)
+            ]
+        finally:
+            Path(dag_file).unlink()
+
+        assert outputs[0] == outputs[1]
+        assert outputs[0] != ""
 
 
 class TestUnifiedGraphBuilder:
