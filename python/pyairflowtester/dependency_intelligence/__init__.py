@@ -107,4 +107,4 @@ __all__ = [
     "ExecutionEvent",
 ]
 
-__version__ = "0.4.0"  # Phase 1-4 MVP complete
+__version__ = "0.5.2"  # tracks pyairflowtester distribution (Phase 1-4 MVP complete)

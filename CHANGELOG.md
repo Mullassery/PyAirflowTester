@@ -5,7 +5,30 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-10-12
+
 ### Fixed
+
+- **`DagParser::calculate_max_depth` (`src/dag_parser.rs`) was a fake stub** that
+  ignored its input entirely and returned a hardcoded `5` for every DAG. It now builds
+  the real dependency graph from the DAG source — `>>`/`<<` chains (including list
+  operands like `[a, b] >> c`), and `task.set_upstream(...)`/`task.set_downstream(...)`
+  calls — resolving operator variable names to their declared `task_id`, and returns the
+  number of tasks in the longest dependency chain (a linear   `a >> b >> c` = 3; an
+  all-independent DAG = 1; an empty DAG = 0). Adds 7 regression tests covering linear
+  chains, diamonds, list operands, `<<`, `set_upstream`, and `set_downstream`.
+- **`DagParser::detect_cycles` (`src/dag_parser.rs`) never detected a real cycle** — its
+  primary pattern used a `\1` backreference, which the `regex` crate does not support, so
+  `Regex::new` always returned `Err` and the pattern was silently skipped by the
+  `if let Ok(re)` guard; the only other pattern was a loose `.set_upstream(...).set_upstream`
+  substring match. Replaced with a real DFS over the dependency graph (shared with the
+  depth calculation) that reports back edges; adds 4 regression tests (acyclic, `a>>b>>c>>a`,
+  self-loop, and a `set_upstream` two-node cycle).
+- **`dependency_intelligence.__version__` was frozen at `0.4.0`** and never tracked the
+  distribution (by `0.5.1` it was two releases behind). Synced to the distribution
+  version and documented as such.
+- **`Cargo.toml`'s package `version` was still `0.5.0`** while `pyproject.toml` and both
+  Python `__version__`s were `0.5.1`; all four are now aligned.
 
 - **`Scorer.calculate_risk_score` (`scoring.py`) had its severity-to-risk direction
   inverted — the core formula behind the `pyairflowtester score` command.** A violation

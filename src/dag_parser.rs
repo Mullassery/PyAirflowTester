@@ -1,3 +1,4 @@
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::Path;
 use regex::Regex;
@@ -88,7 +89,7 @@ impl DagParser {
         // Extract metadata
         dag.task_count = self.count_tasks(&dag.source_code);
         dag.task_ids = self.extract_task_ids(&dag.source_code);
-        dag.max_task_depth = self.calculate_max_depth(&dag.task_ids);
+        dag.max_task_depth = self.calculate_max_depth(&dag.source_code);
         dag.has_cycles = self.detect_cycles(&dag.source_code);
         dag.dynamic_dag_detected = self.detect_dynamic_dag(&dag.source_code);
         dag.expensive_imports = self.detect_expensive_imports(&dag.source_code);
@@ -165,26 +166,142 @@ impl DagParser {
         ids
     }
 
-    /// Calculate maximum task dependency depth
-    fn calculate_max_depth(&self, _task_ids: &[String]) -> usize {
-        // Simplified: would need actual dependency analysis
-        // For now, return a default depth
-        5
+    /// Calculate the maximum task dependency depth.
+    ///
+    /// Walks the real dependency graph built from the DAG source and returns
+    /// the number of tasks in its longest dependency chain (a linear
+    /// `a >> b >> c` has depth 3; a DAG whose tasks are all independent has
+    /// depth 1; a DAG with no tasks has depth 0). Dependencies are read from
+    /// `>>`/`<<` chains (including list operands such as `[a, b] >> c`) and
+    /// from `task.set_upstream(...)` / `task.set_downstream(...)` calls.
+    ///
+    /// Previously this was a stub that ignored its input entirely and always
+    /// returned a hardcoded `5` for every DAG.
+    fn calculate_max_depth(&self, source: &str) -> usize {
+        let (nodes, edges) = self.build_dependency_edges(source);
+        if nodes.is_empty() {
+            return 0;
+        }
+
+        // Longest path measured in nodes, memoized across the (necessarily
+        // acyclic in valid DAGs) graph. The `on_stack` set guards against
+        // cycles so malformed input can't cause unbounded recursion;
+        // `detect_cycles` reports those separately.
+        let mut memo: HashMap<String, usize> = HashMap::new();
+        let mut on_stack: HashSet<String> = HashSet::new();
+        let mut max_depth = 1;
+        for node in &nodes {
+            max_depth = max_depth.max(longest_chain(node, &edges, &mut memo, &mut on_stack));
+        }
+        max_depth
     }
 
-    /// Detect circular dependencies
-    fn detect_cycles(&self, source: &str) -> bool {
-        // Simple heuristic: look for patterns that might indicate cycles
-        let cycle_patterns = [
-            r"\s*>>\s*.*>>\s*.*>>\s*\1", // self-reference
-            r"\.set_upstream\(.*\.set_upstream", // chained upstream
-        ];
+    /// Build the dependency graph from DAG source.
+    ///
+    /// Returns the set of task nodes and an adjacency map of `from -> [to]`
+    /// edges, read from `>>`/`<<` chains (including list operands such as
+    /// `[a, b] >> c`) and from `task.set_upstream(...)` /
+    /// `task.set_downstream(...)` calls. Local variable names are resolved to
+    /// their declared `task_id` where possible.
+    fn build_dependency_edges(
+        &self,
+        source: &str,
+    ) -> (HashSet<String>, HashMap<String, Vec<String>>) {
+        // Map local variable names to their declared `task_id` so edges
+        // written in terms of variables (`extract >> transform`) can be
+        // resolved to stable task ids. Falls back to the variable name when
+        // no `task_id` is declared (e.g. `@task`-decorated callables).
+        let var_to_task = extract_var_to_task_map(source);
+        let resolve = |name: &str| -> String {
+            let name = name.trim().trim_end_matches("()");
+            var_to_task
+                .get(name)
+                .cloned()
+                .unwrap_or_else(|| name.to_string())
+        };
+        let parse_side = |seg: &str| -> Vec<String> {
+            seg.trim()
+                .trim_start_matches('[')
+                .trim_end_matches(']')
+                .split(',')
+                .map(&resolve)
+                .filter(|s| !s.is_empty())
+                .collect()
+        };
 
-        for pattern in &cycle_patterns {
-            if let Ok(re) = Regex::new(pattern) {
-                if re.is_match(source) {
-                    return true;
+        let mut nodes: HashSet<String> = self.extract_task_ids(source).into_iter().collect();
+        let mut edges: HashMap<String, Vec<String>> = HashMap::new();
+        let mut add_edge = |from: String, to: String| {
+            if from.is_empty() || to.is_empty() {
+                return;
+            }
+            nodes.insert(from.clone());
+            nodes.insert(to.clone());
+            edges.entry(from).or_default().push(to);
+        };
+
+        for raw_line in source.lines() {
+            let line = raw_line.trim();
+            if line.starts_with('#') {
+                continue;
+            }
+            if line.contains(">>") {
+                let segs: Vec<&str> = line.split(">>").collect();
+                for w in segs.windows(2) {
+                    for a in parse_side(w[0]) {
+                        for b in parse_side(w[1]) {
+                            add_edge(a.clone(), b.clone());
+                        }
+                    }
                 }
+            } else if line.contains("<<") {
+                // `a << b` means b is upstream of a, i.e. edge b -> a.
+                let segs: Vec<&str> = line.split("<<").collect();
+                for w in segs.windows(2) {
+                    for a in parse_side(w[1]) {
+                        for b in parse_side(w[0]) {
+                            add_edge(a.clone(), b.clone());
+                        }
+                    }
+                }
+            }
+        }
+
+        if let Ok(re) = Regex::new(r"(\w+)\.set_upstream\(([^)]*)\)") {
+            for cap in re.captures_iter(source) {
+                let downstream = resolve(&cap[1]);
+                for upstream in parse_side(&cap[2]) {
+                    add_edge(upstream, downstream.clone());
+                }
+            }
+        }
+        if let Ok(re) = Regex::new(r"(\w+)\.set_downstream\(([^)]*)\)") {
+            for cap in re.captures_iter(source) {
+                let upstream = resolve(&cap[1]);
+                for downstream in parse_side(&cap[2]) {
+                    add_edge(upstream.clone(), downstream);
+                }
+            }
+        }
+
+        (nodes, edges)
+    }
+
+    /// Detect circular dependencies using a depth-first search over the real
+    /// dependency graph.
+    ///
+    /// The previous implementation was a regex "heuristic" whose primary
+    /// pattern used a `\1` backreference (unsupported by the `regex` crate),
+    /// so `Regex::new` always failed and the pattern was silently skipped,
+    /// leaving only a loose `.set_upstream(...).set_upstream` substring match
+    /// that never detected an actual cycle.
+    fn detect_cycles(&self, source: &str) -> bool {
+        let (nodes, edges) = self.build_dependency_edges(source);
+        let mut visiting: HashSet<String> = HashSet::new();
+        let mut visited: HashSet<String> = HashSet::new();
+        for node in &nodes {
+            if has_cycle_from(node, &edges, &mut visiting, &mut visited) {
+                return true;
             }
         }
         false
@@ -258,6 +375,76 @@ impl Default for DagParser {
     }
 }
 
+/// Build a map from assigned variable names to declared `task_id` values.
+///
+/// Matches the common Airflow idiom of assigning an operator instance to a
+/// variable and passing a `task_id` keyword argument, e.g.
+/// `extract = PythonOperator(\n    task_id="extract",\n)`.
+fn extract_var_to_task_map(source: &str) -> HashMap<String, String> {
+    let mut map = HashMap::new();
+    let re = Regex::new(r#"(?s)(\w+)\s*=\s*\w*Operator\(.*?task_id\s*=\s*["']([^"']+)["']"#);
+    if let Ok(re) = re {
+        for cap in re.captures_iter(source) {
+            map.insert(cap[1].to_string(), cap[2].to_string());
+        }
+    }
+    map
+}
+
+/// Longest dependency chain (in nodes) starting at `node`, memoized.
+fn longest_chain(
+    node: &str,
+    edges: &HashMap<String, Vec<String>>,
+    memo: &mut HashMap<String, usize>,
+    on_stack: &mut HashSet<String>,
+) -> usize {
+    if let Some(&cached) = memo.get(node) {
+        return cached;
+    }
+    if on_stack.contains(node) {
+        return 1;
+    }
+    on_stack.insert(node.to_string());
+    let mut best = 1;
+    if let Some(successors) = edges.get(node) {
+        for successor in successors {
+            best = best.max(1 + longest_chain(successor, edges, memo, on_stack));
+        }
+    }
+    on_stack.remove(node);
+    memo.insert(node.to_string(), best);
+    best
+}
+
+/// Depth-first search for a back edge (cycle) starting at `node`.
+///
+/// `visiting` holds the nodes on the current DFS stack; re-entering one of
+/// them means a cycle. `visited` memoizes fully-explored nodes so each node is
+/// expanded once across the whole traversal.
+fn has_cycle_from(
+    node: &str,
+    edges: &HashMap<String, Vec<String>>,
+    visiting: &mut HashSet<String>,
+    visited: &mut HashSet<String>,
+) -> bool {
+    if visited.contains(node) {
+        return false;
+    }
+    if !visiting.insert(node.to_string()) {
+        return true;
+    }
+    if let Some(successors) = edges.get(node) {
+        for successor in successors {
+            if has_cycle_from(successor, edges, visiting, visited) {
+                return true;
+            }
+        }
+    }
+    visiting.remove(node);
+    visited.insert(node.to_string());
+    false
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -302,5 +489,167 @@ dag = DAG(
 
         let dag = parser.parse_file(file.path()).unwrap();
         assert_eq!(dag.dag_id, "test_dag");
+    }
+
+    #[test]
+    fn test_max_depth_no_tasks_is_zero() {
+        let parser = DagParser::new();
+        assert_eq!(parser.calculate_max_depth("dag_id = 'x'\n"), 0);
+    }
+
+    #[test]
+    fn test_max_depth_independent_tasks_is_one() {
+        let parser = DagParser::new();
+        let source = r#"
+a = PythonOperator(task_id="a")
+b = PythonOperator(
+    task_id="b",
+)
+"#;
+        // Two tasks, no dependencies between them.
+        assert_eq!(parser.calculate_max_depth(source), 1);
+    }
+
+    #[test]
+    fn test_max_depth_linear_chain() {
+        let parser = DagParser::new();
+        let source = r#"
+extract = PythonOperator(
+    task_id="extract",
+)
+transform = PythonOperator(
+    task_id="transform",
+)
+load = PythonOperator(
+    task_id="load",
+)
+extract >> transform >> load
+"#;
+        // Longest chain extract -> transform -> load = 3 tasks.
+        assert_eq!(parser.calculate_max_depth(source), 3);
+    }
+
+    #[test]
+    fn test_max_depth_diamond() {
+        let parser = DagParser::new();
+        let source = r#"
+a = BashOperator(task_id="a")
+b = BashOperator(
+    task_id="b",
+)
+c = BashOperator(
+    task_id="c",
+)
+d = BashOperator(
+    task_id="d",
+)
+a >> b >> d
+a >> c >> d
+"#;
+        // Longest chain is 3 tasks (a -> b -> d), not 4 (the diamond has no
+        // path visiting both b and c).
+        assert_eq!(parser.calculate_max_depth(source), 3);
+    }
+
+    #[test]
+    fn test_max_depth_list_operand() {
+        let parser = DagParser::new();
+        let source = r#"
+start = BashOperator(task_id="start")
+a = BashOperator(task_id="a")
+b = BashOperator(task_id="b")
+finish = BashOperator(task_id="finish")
+start >> [a, b] >> finish
+"#;
+        // start -> {a, b} -> finish, so longest chain = 3 tasks.
+        assert_eq!(parser.calculate_max_depth(source), 3);
+    }
+
+    #[test]
+    fn test_max_depth_set_upstream_and_downstream() {
+        let parser = DagParser::new();
+        let source = r#"
+a = BashOperator(task_id="a")
+b = BashOperator(task_id="b")
+c = BashOperator(task_id="c")
+b.set_upstream(a)
+c.set_upstream(b)
+"#;
+        // b.set_upstream(a) => a -> b ; c.set_upstream(b) => b -> c.
+        assert_eq!(parser.calculate_max_depth(source), 3);
+    }
+
+    #[test]
+    fn test_max_depth_set_downstream() {
+        let parser = DagParser::new();
+        let source = r#"
+a = BashOperator(task_id="a")
+b = BashOperator(task_id="b")
+c = BashOperator(task_id="c")
+a.set_downstream(b)
+b.set_downstream(c)
+"#;
+        // a.set_downstream(b) => a -> b ; b.set_downstream(c) => b -> c.
+        assert_eq!(parser.calculate_max_depth(source), 3);
+    }
+
+    #[test]
+    fn test_max_depth_left_shift_operator() {
+        let parser = DagParser::new();
+        let source = r#"
+a = BashOperator(task_id="a")
+b = BashOperator(task_id="b")
+c = BashOperator(task_id="c")
+c << b << a
+"#;
+        // c << b << a means a -> b -> c (still a 3-task chain).
+        assert_eq!(parser.calculate_max_depth(source), 3);
+    }
+
+    #[test]
+    fn test_detect_cycles_none_for_acyclic() {
+        let parser = DagParser::new();
+        let source = r#"
+a = BashOperator(task_id="a")
+b = BashOperator(task_id="b")
+c = BashOperator(task_id="c")
+a >> b >> c
+"#;
+        assert!(!parser.detect_cycles(source));
+    }
+
+    #[test]
+    fn test_detect_cycles_finds_cycle() {
+        let parser = DagParser::new();
+        let source = r#"
+a = BashOperator(task_id="a")
+b = BashOperator(task_id="b")
+c = BashOperator(task_id="c")
+a >> b >> c >> a
+"#;
+        assert!(parser.detect_cycles(source));
+    }
+
+    #[test]
+    fn test_detect_cycles_self_loop() {
+        let parser = DagParser::new();
+        let source = r#"
+a = BashOperator(task_id="a")
+a >> a
+"#;
+        assert!(parser.detect_cycles(source));
+    }
+
+    #[test]
+    fn test_detect_cycles_via_set_upstream() {
+        let parser = DagParser::new();
+        let source = r#"
+a = BashOperator(task_id="a")
+b = BashOperator(task_id="b")
+a.set_upstream(b)
+b.set_upstream(a)
+"#;
+        // a's upstream is b, and b's upstream is a => a <-> b cycle.
+        assert!(parser.detect_cycles(source));
     }
 }
