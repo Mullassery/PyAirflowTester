@@ -1,6 +1,6 @@
 # PyAirflowTester: Airflow & dbt Static Analysis + Dependency Intelligence
 
-[![Grapify](https://img.shields.io/badge/Grapify-Code%20Scan-purple)](https://grapify.ai)
+[![Graphify](https://img.shields.io/badge/Graphify-knowledge%20graph-blue)](https://github.com/Graphify-Labs/graphify)
 
 ## Problem
 
