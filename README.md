@@ -1,5 +1,7 @@
 # PyAirflowTester: Airflow & dbt Static Analysis + Dependency Intelligence
 
+[![Grapify](https://img.shields.io/badge/Grapify-Code%20Scan-purple)](https://grapify.ai)
+
 ## Problem
 
 Airflow DAGs and dbt models accumulate risk silently: a hardcoded secret,
