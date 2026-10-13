@@ -1,117 +1,53 @@
-# PyAirflowTester: Airflow & dbt Static Analysis + Dependency Intelligence
+# PyAirflowTester
 
-[![Graphify](https://img.shields.io/badge/Graphify-knowledge%20graph-blue)](https://github.com/Graphify-Labs/graphify)
+Static analysis, dependency intelligence, and risk scoring for Airflow DAGs and dbt projects.
 
-## Problem
+## What it is
 
-Airflow DAGs and dbt models accumulate risk silently: a hardcoded secret,
-a missing SLA, a circular dependency, an untested high-importance model —
-none of it shows up until something breaks in production, and there's
-rarely a single tool that checks both the orchestration layer (Airflow)
-and the transformation layer (dbt) together.
+PyAirflowTester helps you catch reliability and security issues before deployment by statically analyzing Airflow DAGs, dbt manifests, and `airflow.cfg`. It builds a unified dependency graph to understand blast radius and impact, computes aggregate risk scores, and exports findings in formats suitable for CI (including SARIF for GitHub code scanning).
 
-## Solution
+## Features / Highlights
 
-Static analysis and dependency-graph tooling for Airflow DAGs and dbt projects, plus a
-library-level dependency intelligence toolkit (impact analysis, blast radius, risk scoring,
-observability). Ships as a pure-Python CLI, with an optional web dashboard.
+- **Static analysis**: 33 rules covering DAGs, dbt manifests, and Airflow configuration (secrets, SLAs, cycles, config issues, etc.).
+- **Unified dependency graph**: Combines Airflow DAG edges with dbt lineage from `manifest.json`.
+- **Impact & blast radius**: Understand what breaks downstream if a node changes.
+- **Risk scoring**: Aggregate 0-100 risk score with filtering by severity.
+- **CI-friendly**: JSON, HTML, and SARIF output for GitHub code scanning.
+- **Web dashboard**: Optional FastAPI/uvicorn dashboard (`serve`) to visualize graph and findings.
+- **Library API**: Dependency intelligence primitives for programmatic use (impact, blast radius, risk, observability helpers).
 
-[![PyPI](https://img.shields.io/pypi/v/pyairflowtester)](https://pypi.org/project/pyairflowtester/)
-[![CI](https://github.com/Mullassery/PyAirflowTester/actions/workflows/ci.yml/badge.svg)](https://github.com/Mullassery/PyAirflowTester/actions/workflows/ci.yml)
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
+## Who it's for / Use cases
 
-## Use cases
+- **CI gating**: Fail builds on critical findings or low risk scores.
+- **Pre-deployment checks**: Assess blast radius before changing high-impact nodes.
+- **Security reviews**: Catch hardcoded secrets, risky configs, and missing guardrails.
+- **dbt + Airflow alignment**: See end-to-end dependencies across orchestration and transformation.
+- **Technical debt tracking**: Identify orphans, cycles, and untested/high-importance nodes.
 
-- **Gating CI on Airflow/dbt risk** — `pyairflowtester scan --format sarif`
-  feeds GitHub code scanning directly, and `pyairflowtester score` gives a single
-  0-100 risk number you can threshold on in a CI step. `score --compare <branch>` is
-  accepted but is **not implemented** today — it prints the branch name back and does
-  nothing else (no checkout, no baseline scan, no diff); see ROADMAP_HONEST.md.
-- **Finding blast radius before a deploy** — `dependency blast-radius -n
-  <node_id>` answers "is this safe to ship" from a real dependency graph,
-  not a guess.
-- **A dashboard over DAG/dbt health without standing up a database** —
-  `pyairflowtester serve` renders real HTML from the same graph the CLI
-  builds, no separate service to run.
-- **Not yet a good fit for:** correlating findings against a live Airflow
-  metadata DB / dbt run history — the `Analyzer`/`connect` runtime-
-  correlation path is an explicit, fail-fast stub today, not a working
-  feature (see [What does not work (yet)](#what-does-not-work-yet--please-read-before-relying-on-this)).
+## What it is not
 
-## What actually works today
+- **Not a live runtime correlator**: The `Analyzer`/`connect` path for correlating against live Airflow metadata or dbt run history is explicitly stubbed (`AnalyzerNotImplementedError`).
+- **Not a test runner**: It analyzes structure and metadata, not executes DAGs or dbt tests.
+- **Pure Python by default**: A Rust core exists in `src/` but is not wired into the CLI and not shipped; building it is optional.
+- **Alpha maturity**: v0.5.2 - core scanning, graph analysis, and scoring are working; runtime correlation is planned.
 
-- **`pyairflowtester scan`** — runs 33 static analysis rules against Airflow DAG source files,
-  a dbt `manifest.json`, and/or an `airflow.cfg`, and reports violations (security secrets,
-  hardcoded connections, missing SLAs, circular dependencies, config misconfigurations, etc).
-- **`pyairflowtester rules`** — lists the full rule catalog.
-- **`pyairflowtester score`** — aggregate risk score from scan findings.
-- **`pyairflowtester dependency ...`** — build a unified dependency graph from DAG files and a
-  dbt manifest, then query impact/blast-radius/lineage/cycles/orphans/risk-score over it.
-- **`pyairflowtester serve`** — launches a real FastAPI + uvicorn web dashboard (optional
-  `pip install pyairflowtester[web]`) that builds the same dependency graph as `dependency
-  build` and renders `DashboardBuilder` output as actual browsable HTML pages (a node list at
-  `/`, a per-node dashboard at `/nodes/<node_id>`, and an overall `/health` page) — not a JSON
-  dump, real HTML tables. See `python/pyairflowtester/web/app.py`.
-- The `pyairflowtester.dependency_intelligence` package (usable as a library, see examples
-  below) for ownership tracking, schema-evolution tracking, SLA validation, test-coverage
-  analysis, anomaly detection, recommendations, and observability primitives
-  (metrics/alerts/events/dashboards) — these operate on the graph you build, not on a live
-  system. `DashboardBuilder`'s output now also has a real HTML frontend via `serve` above,
-  not just plain dicts for programmatic use.
+## Project status
 
-## What does not work (yet) — please read before relying on this
-
-- **Runtime correlation (`Analyzer` class) is not implemented.** It's meant to correlate
-  findings against a live Airflow metadata database and dbt run history, but doing that
-  honestly requires a real Airflow/dbt instance to build and validate against. Every
-  `Analyzer` method (and the `pyairflowtester connect` CLI command) raises
-  `AnalyzerNotImplementedError` with a clear message rather than silently returning `[]` and
-  pretending nothing was found. This is planned future work, not a working feature.
-- **The Rust core (`src/*.rs`, built via PyO3) is not wired into the CLI.** The Python
-  package ships as pure Python and does not require Rust or `maturin` to install or run.
-  The Rust crate exists as a separate, independent reimplementation of some rule/parsing/
-  scoring logic; `python/pyairflowtester/__init__.py` will opportunistically import it if
-  you build it yourself (`maturin develop`), but nothing in the CLI path uses it, and it is
-  not built or shipped as part of the published package. Treat it as an experiment, not a
-  supported acceleration layer.
-- **Correction (2026-09-19): this section previously claimed `FailurePredictionEngine` and
-  `HealthScoreCalculator` hardcode their test-coverage inputs — that claim is out of date and
-  was wrong as of this pass.** Reading `python/pyairflowtester/dependency_intelligence/
-  intelligence.py` directly: `predict_node_failure` (line ~133) calls
-  `self.test_analyzer.analyze_coverage(node_id).total_tests`, and `_calculate_test_score`
-  (line ~437-447) calls the same real `TestCoverageAnalyzer` per node — neither is a hardcoded
-  constant. This is also locked in by a regression test,
-  `test_test_score_varies_with_real_coverage_data` in
-  `python/tests/test_dependency_intelligence_phase2.py`, which asserts the score differs
-  between no/partial/full coverage fixtures (verified passing: `pytest
-  python/tests/test_dependency_intelligence_phase2.py -k test_score_varies -v`). The one
-  real, remaining simplification: `predict_node_failure`'s historical-failure-rate factor
-  still assumes a fixed 30-day window (`days_of_data = 30` in `intelligence.py`) rather than
-  computing it from actual event timestamps — that part of the original claim was accurate.
-  Everything else under "Dependency Intelligence" below (ownership, schema evolution, SLA
-  validation, test-coverage analysis via `TestCoverageAnalyzer`, anomaly detection,
-  observability) operates on real data you feed it.
+Version 0.5.2. Core commands (`scan`, `score`, `rules`, `dependency ...`, `serve`) are functional. The runtime correlation feature is stubbed (not implemented). See [ROADMAP_HONEST.md](ROADMAP_HONEST.md) for details.
 
 ## Installation
 
 ```bash
 pip install pyairflowtester
-# or with uv
-uv pip install pyairflowtester
-
-# Verify installation
-pyairflowtester --version
 ```
 
-Pure Python — no Rust toolchain required. The CLI's core commands (`scan`, `score`, `rules`,
-`dependency ...`) have no dependencies beyond `click`/`rich`. The web dashboard (`serve`) is
-optional and pulls in `fastapi`/`uvicorn`/`jinja2`:
+With web dashboard:
 
 ```bash
 pip install "pyairflowtester[web]"
 ```
 
-For development:
+From source:
 
 ```bash
 git clone https://github.com/mullassery/pyairflowtester.git
@@ -119,55 +55,29 @@ cd pyairflowtester
 pip install -e ".[dev]"
 ```
 
-## Static Analysis: `scan`
+Requires Python 3.10+.
+
+## Quick start
 
 ```bash
-# Scan DAGs, a dbt project, and/or airflow.cfg
+# Scan current directory for DAGs, dbt, airflow.cfg
 pyairflowtester scan . --dags dags/ --dbt dbt/ --airflow-cfg airflow.cfg
 
-# Output formats
-pyairflowtester scan . --format json --output results.json
-pyairflowtester scan . --format html --output report.html
-pyairflowtester scan . --format sarif --output results.sarif  # For GitHub code scanning
+# Get aggregate risk score
+pyairflowtester score . --dags dags/
 
-# Filter results
-pyairflowtester scan . --dags dags/ --severity critical
-pyairflowtester rules --category security
-```
+# List all rules
+pyairflowtester rules
 
-Rule catalog (33 rules, see `pyairflowtester rules` for the live list):
-
-- **AFW001-AFW015** — DAG source-code rules: circular dependencies (real graph-cycle
-  detection over parsed `>>`/`<<`/`set_upstream`/`set_downstream` edges, not a regex
-  backreference hack), missing SLAs, expensive imports, excessive task counts, risky
-  catchup config, default pool usage, hardcoded connection IDs, **hardcoded secrets**,
-  excessive retries, sensor timeouts, branch complexity, missing docs, missing alerting,
-  deprecated operators.
-- **DBT001-DBT003** — dbt manifest rules: missing tests, redundant tests, untested
-  high-importance models (derived from the manifest's actual `test.*` nodes and their
-  `depends_on`/`attached_node`, not a nonexistent manifest field).
-- **CFG001-CFG015** — `airflow.cfg` audit rules: executor choice, pool sizing, concurrency,
-  queueing, log retention, encryption, TLS, RBAC, scheduler/worker settings, log storage,
-  backups, DAG folder location.
-
-Every rule is evaluated in isolation: if one rule throws, it logs a warning and the rest of
-the rules still run and still report their findings for that file.
-
-## Dependency Intelligence
-
-### CLI
-
-```bash
+# Build dependency graph and analyze blast radius
 pyairflowtester dependency build --dags dags/ --dbt-manifest dbt/target/manifest.json
-pyairflowtester dependency impact <node_id> --depth 10
-pyairflowtester dependency lineage --dags dags/
-pyairflowtester dependency blast-radius -n <node_id>
-pyairflowtester dependency detect-cycles --dags dags/
-pyairflowtester dependency detect-orphans --dags dags/
-pyairflowtester dependency risk-score --dags dags/ --top 20
+pyairflowtester dependency blast-radius -n dag_my_dag
+
+# Launch web dashboard
+pyairflowtester serve --port 8080
 ```
 
-### As a library
+### Programmatic usage
 
 ```python
 from pyairflowtester.dependency_intelligence import (
@@ -176,252 +86,26 @@ from pyairflowtester.dependency_intelligence import (
     BlastRadiusEngine,
 )
 
-# Build a unified graph from DAG files + a dbt manifest
 graph = UnifiedGraphBuilder.build_unified_graph(
     dag_files=["dags/my_dag.py"],
     dbt_manifest="dbt/target/manifest.json",
 )
 
-# Analyze impact of changing a node
 impact = ImpactAnalysisEngine(graph).analyze("dag_my_dag")
-print(f"Impact Score: {impact.impact_score:.1%}")
-print(f"Impacted Nodes: {len(impact.impacted_nodes)}")
+print(f"Impact score: {impact.impact_score:.1%}, impacted: {len(impact.impacted_nodes)}")
 
-# Calculate deployment risk
 blast = BlastRadiusEngine(graph).analyze(["dag_my_dag"])
-print(f"Blast Radius: {blast.blast_radius} nodes")
-print(f"Safe to Deploy: {'Yes' if blast.deployable else 'No'}")
+print(f"Blast radius: {blast.blast_radius} nodes, deployable: {blast.deployable}")
 ```
 
-```python
-from pyairflowtester.dependency_intelligence import RiskScoringEngine
+## Documentation
 
-engine = RiskScoringEngine(graph)
-scores = engine.score_all_nodes()
-
-high_risk = sorted(scores.items(), key=lambda x: x[1].risk_score, reverse=True)[:10]
-for node_id, score in high_risk:
-    print(f"{node_id}: Risk {score.risk_score:.1f}/10")
-```
-
-```python
-from pyairflowtester.dependency_intelligence import (
-    MetricsCollector, AlertManager, EventLogger, DashboardBuilder,
-)
-
-# These operate on data you feed them (e.g. from your own Airflow listener/webhook),
-# not on a live connection this library establishes itself.
-metrics = MetricsCollector()
-alerts = AlertManager(graph)
-events = EventLogger(graph)
-
-events.log_execution(
-    node_id="fact_orders", status="success", duration_ms=1250,
-    start_time=..., end_time=...,
-)
-alerts.set_threshold("fact_orders", "execution_time", warning=5000, critical=10000)
-
-builder = DashboardBuilder(graph, metrics, alerts, events)
-dashboard = builder.build_health_dashboard()
-```
-
-## vs native Airflow validation
-
-No single third-party OSS tool covers this exact combined niche (Airflow
-DAGs + dbt models, silent risk patterns), so the fair baseline is what
-Airflow itself already validates natively (`DagBag` import-time checks —
-the same mechanism `airflow dags list-import-errors` uses). Tested both
-against a real, deliberately risky DAG file with four genuine planted
-issues: a hardcoded Stripe-style API key (`STRIPE_API_KEY = "sk_live_..."`),
-zero SLAs set on any task, a real 3-task circular dependency
-(`t1 >> t2 >> t3 >> t1`), and `catchup=True` with no bounded backfill —
-plus a real 2-model dbt manifest with no tests on either model.
-
-| | `pyairflowtester scan` | Native Airflow (`DagBag`) |
-|---|---|---|
-| Runtime | 72ms | 311ms |
-| Circular dependency | **Caught** (AFW001, critical) | **Caught** — but fatally: the DAG fails to import at all (`AirflowDagCycleException`), so nothing else about this file is ever checked |
-| Hardcoded secret | **Caught** (AFW009, critical) — see bug below | Not checked — Airflow has no concept of this |
-| `catchup=True` without backfill bound | **Caught** (AFW006, high) | Not checked |
-| Default pool usage | **Caught** (AFW007, medium) | Not checked |
-| Missing SLA | Not checked — see limitation below | Not checked |
-| dbt models with no tests | **Caught**, both models (DBT001, high) | N/A — dbt isn't Airflow's concern at all |
-
-**What this actually shows:** native Airflow's validation is all-or-nothing
-— a single fatal issue (like the cycle here) blocks the DAG from loading
-at all, so you get exactly one error and nothing else. `pyairflowtester`'s
-static source analysis surfaced all 6 real issues simultaneously, several
-of which (secrets, pool sizing, catchup config, dbt test coverage) native
-Airflow has no mechanism to check at all, cycle or no cycle — that's the
-real value-add.
-
-**Real bug found and fixed:** `SecretsInCodeRule` (`AFW009`) missed my
-planted secret entirely on the first run. Root cause,
-`python/pyairflowtester/rules/dag_advanced.py`: the regex patterns used a
-bare `re.search` with no `re.IGNORECASE`, so `STRIPE_API_KEY = "..."` (a
-very common Python convention — an uppercase module-level constant) never
-matched the lowercase `api_key\s*=` pattern. Fixed by adding
-`re.IGNORECASE`; regression test added
-(`test_hardcoded_secret_with_uppercase_variable_name`).
-
-**Real limitation found, not fixed (existing behavior is intentionally
-tested):** `MissingSLARule` (`AFW002`) never fired on my planted
-no-SLA-anywhere DAG, because the rule only evaluates DAGs whose **filename**
-contains the literal substring `"production"` — my file was named
-`risky_pipeline.py`. This is existing, deliberately-tested behavior (see
-`test_ignores_non_production_dag` in `test_dag_rules.py`), not an
-oversight, so it wasn't changed here — but it's worth knowing that in
-practice this means missing-SLA detection silently does nothing on the
-large majority of real DAG files, which are rarely named with the literal
-word "production" in them regardless of whether they actually run in
-production.
-
-## Web Dashboard: `serve`
-
-`DashboardBuilder` above returns plain dicts for programmatic use. `pyairflowtester serve`
-serves that same output as a real, browsable HTML dashboard — a genuinely minimal app (FastAPI
-+ Jinja2-rendered HTML, no JS framework), not a JSON viewer:
-
-```bash
-pip install "pyairflowtester[web]"
-pyairflowtester serve --dags dags/ --dbt-manifest manifest.json --port 8080
-# then open http://127.0.0.1:8080/
-```
-
-Routes:
-
-- `GET /` — lists every node in the dependency graph (DAGs, tasks, dbt models, ...), with its
-  type, severity, owner, and upstream/downstream counts, linking to its dashboard.
-- `GET /nodes/{node_id}` — renders `DashboardBuilder.build_node_dashboard(node_id)` as HTML
-  (execution metrics, reliability/failure rate, active alerts, recent events). 404s for an
-  unknown node ID.
-- `GET /health` — renders `DashboardBuilder.build_health_dashboard()`: graph-wide stats, top
-  failing nodes, slowest nodes.
-
-The graph is built once at startup from `--dags`/`--dbt-manifest` (same source-collection logic
-as `pyairflowtester dependency build`). Metrics/alerts/events start empty unless you feed them
-programmatically (as in the snippet above) before calling `create_app()` yourself — `serve`
-itself doesn't fabricate execution history. Implementation: `python/pyairflowtester/web/app.py`;
-tests: `python/tests/test_web_app.py` (uses FastAPI's `TestClient`, no real socket bound).
-
-## Architecture
-
-Two real, independent things live in this repo:
-
-1. **The Python CLI (`python/pyairflowtester/`)** — this is what `pip install pyairflowtester`
-   ships and what every command above actually runs: `Scanner` (33 rules), `ReportGenerator`,
-   `Scorer`, and the `dependency_intelligence` package (graph model, parsers, analytics
-   engines, observability primitives). This is the supported, tested path.
-2. **A Rust crate (`src/*.rs`)** — a separate, partial reimplementation of some of the same
-   rule/parsing/scoring logic using PyO3 bindings (`pyairflowtester._core`). It is **not**
-   built or used by the published package or the CLI. `__init__.py` imports it opportunistically
-   and falls back to `None` if it isn't present, which is the normal case for anyone who just
-   `pip install`s this package. Building the extension yourself (`maturin develop`) does not
-   change the CLI's behavior — nothing in the CLI calls into it.
-
-The `Analyzer` class (runtime correlation against live Airflow/dbt) is a stub that raises
-`AnalyzerNotImplementedError` — see "What does not work (yet)" above.
-
-## Status
-
-**Proof of concept, actively fixed up.** The static-analysis CLI path (`scan`, `rules`,
-`score`, `dependency ...`) works end-to-end and is covered by an automated test suite.
-Runtime correlation is explicitly not implemented (fails fast, doesn't fake results). The
-Rust core is not part of the supported path.
-
-- Test suite: `python/tests/`, run with `pytest` from the repo root — **198 tests passing,
-  1 skipped** with just `pip install -e ".[dev]"` (verify yourself: `pytest python/tests/
-  -v`), or **205 passing, 0 skipped** with `pip install -e ".[dev,web]"` (both verified
-  2026-09-19 on Python 3.11). The skipped test is in `test_web_app.py`, which is skipped
-  automatically if the optional `web` extra isn't installed. Line coverage is ~71-74%
-  overall (`--cov-report=term-missing`), but it's uneven: `cli.py` and
-  `dependency_intelligence/cli.py` (the actual CLI entry points users run) show **0%**
-  coverage — every command is exercised indirectly through the underlying classes, not
-  through the CLI wiring itself, so a broken `click` option or argument-passing bug in the
-  CLI layer would not be caught by the test suite. `report.py` (20%) and `rules/dbt.py`
-  (22%) are also thin. See ROADMAP_HONEST.md for specifics.
-- Static rules: 33, all wired into `scan` (previously most of the catalog — the
-  `dag_advanced.py` rules including secrets detection, and all of `config.py` — was defined
-  but never actually invoked by `scan`).
-
-## CLI Reference
-
-```bash
-pyairflowtester scan . --dags dags/ --dbt dbt/ --airflow-cfg airflow.cfg --format html
-pyairflowtester score . --compare main  # --compare is currently a no-op, see ROADMAP_HONEST.md
-pyairflowtester rules --category reliability --severity critical
-pyairflowtester dependency build --dags dags/ --dbt-manifest manifest.json
-pyairflowtester dependency impact <node_id> --depth 10
-pyairflowtester dependency lineage --format mermaid
-pyairflowtester dependency blast-radius -n <node_id>
-pyairflowtester dependency detect-cycles
-pyairflowtester dependency detect-orphans
-pyairflowtester dependency risk-score --top 20
-pyairflowtester connect --airflow-home $AIRFLOW_HOME  # currently: reports "not implemented"
-pyairflowtester serve --dags dags/ --dbt-manifest manifest.json --port 8080  # requires [web] extra
-```
-
-## Requirements
-
-- Python 3.10+
-- For Airflow integration: Airflow 2.0+ (only used to shape the DAG source patterns the
-  rules look for; Airflow itself is not a runtime dependency)
-- For dbt integration: a dbt `manifest.json` (dbt itself is not a runtime dependency)
-
-## Roadmap
-
-Honestly scoped, in priority order:
-
-- Runtime correlation (`Analyzer`): connect to a live Airflow metadata DB and dbt run
-  history, replace the current fail-fast stub with real analysis. Needs a live
-  Airflow/dbt instance to build and validate against.
-- Decide the Rust core's fate: either wire `pyairflowtester._core` into the CLI for real
-  (bigger architectural change — would need the two rule/parsing implementations
-  reconciled) or drop it to avoid maintaining two parallel implementations.
-- Broader dbt manifest coverage, more config-audit rules, richer report formats.
-- L2 (Redis) and L4 (DuckDB) cache tiers — `dependency_intelligence/cache.py` now
-  has real L1 (in-memory) and L3 (SQLite) tiers with event-driven invalidation (see
-  below); Redis/DuckDB would need this otherwise dependency-light package
-  (`click`, `rich` only) to take on a heavier/external dependency, so they're left
-  for when there's an actual multi-instance-production use case driving it.
-
-## Tiered caching and the dynamic-DAG fallback
-
-`DependencyGraphEngine` accepts an optional `cache=` (a `TieredCache` from
-`dependency_intelligence/cache.py`) to persist expensive analyses —
-`detect_cycles()`, `get_strongly_connected_components()` — across calls, and
-across separate process runs if you back it with a `SqliteCache`:
-
-```python
-from pyairflowtester.dependency_intelligence.cache import TieredCache, SqliteCache
-from pyairflowtester.dependency_intelligence.graph import DependencyGraphEngine
-
-cache = TieredCache(l3=SqliteCache("~/.cache/pyairflowtester/graph_cache.db"))
-engine = DependencyGraphEngine(graph, cache=cache)
-cycles = engine.detect_cycles()  # cached by content hash of the graph
-```
-
-For DAGs the static AST parser can't see into (built via factory functions,
-dynamic loops, or `exec`/`eval`), `dependency_intelligence/runtime_import.py`
-adds a sandboxed fallback that actually imports the file in an isolated,
-resource-limited subprocess and reads back the real, resolved task graph.
-Requires the optional `airflow` package to be installed (this project still
-doesn't take it on as a hard runtime dependency):
-
-```python
-from pyairflowtester.dependency_intelligence.runtime_import import parse_dag_file_with_fallback
-
-dag_id, task_ids, dependencies = parse_dag_file_with_fallback("dags/dynamic_dag.py")
-```
-
-## Contributing
-
-Contributions welcome. Please submit pull requests to GitHub.
+- [ROADMAP_HONEST.md](ROADMAP_HONEST.md) - Known limitations and planned work
+- [Contributing](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
+- [Code of conduct](CODE_OF_CONDUCT.md)
+- [Changelog](CHANGELOG.md)
 
 ## License
 
-This project is licensed under the [Apache License 2.0](LICENSE).
-
-## Contact
-
-For issues, questions, or feature requests: https://github.com/mullassery/pyairflowtester/issues
+Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) for details.
