@@ -1,0 +1,8 @@
+# RUSTSEC-2023-0071 (Marvin Attack timing side-channel in `rsa`): there is no
+# fixed release upstream, so this cannot be cleared by a version bump. The
+# `rsa` crate is not part of the compiled dependency graph for the features
+# this crate enables (`cargo tree -i rsa` prints nothing); it only lingers in
+# Cargo.lock as an optional transitive of sqlx's mysql driver. Ignored here
+# (with no fix available) rather than blocking CI.
+[advisories]
+ignore = ["RUSTSEC-2023-0071"]

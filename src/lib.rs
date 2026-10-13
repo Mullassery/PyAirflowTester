@@ -22,7 +22,7 @@ use scoring::Scorer;
 
 /// Python module for PyAirflowTester core functionality
 #[pymodule]
-fn _core(_py: Python, m: &PyModule) -> PyResult<()> {
+fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyRule>()?;
     m.add_class::<PyRuleViolation>()?;
     m.add_class::<PySeverity>()?;
@@ -307,29 +307,29 @@ impl PyRuleContext {
         }
     }
 
-    fn with_dag(&mut self, dag_id: String) -> PyResult<PyObject> {
+    fn with_dag(&mut self, dag_id: String) -> PyResult<Py<PyAny>> {
         self.dag_id = Some(dag_id);
-        Ok(Python::with_gil(|py| py.None()))
+        Ok(Python::attach(|py| py.None()))
     }
 
-    fn with_task(&mut self, task_id: String) -> PyResult<PyObject> {
+    fn with_task(&mut self, task_id: String) -> PyResult<Py<PyAny>> {
         self.task_id = Some(task_id);
-        Ok(Python::with_gil(|py| py.None()))
+        Ok(Python::attach(|py| py.None()))
     }
 
-    fn with_model(&mut self, model_name: String) -> PyResult<PyObject> {
+    fn with_model(&mut self, model_name: String) -> PyResult<Py<PyAny>> {
         self.model_name = Some(model_name);
-        Ok(Python::with_gil(|py| py.None()))
+        Ok(Python::attach(|py| py.None()))
     }
 
-    fn with_test(&mut self, test_id: String) -> PyResult<PyObject> {
+    fn with_test(&mut self, test_id: String) -> PyResult<Py<PyAny>> {
         self.test_id = Some(test_id);
-        Ok(Python::with_gil(|py| py.None()))
+        Ok(Python::attach(|py| py.None()))
     }
 
-    fn with_metadata(&mut self, key: String, value: String) -> PyResult<PyObject> {
+    fn with_metadata(&mut self, key: String, value: String) -> PyResult<Py<PyAny>> {
         self.metadata.insert(key, value);
-        Ok(Python::with_gil(|py| py.None()))
+        Ok(Python::attach(|py| py.None()))
     }
 
     #[getter]
