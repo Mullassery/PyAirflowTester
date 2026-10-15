@@ -119,7 +119,7 @@ impl PyRuleViolation {
 // SEVERITY ENUM
 // ============================================================================
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone)]
 pub enum PySeverity {
     Critical,
@@ -181,7 +181,7 @@ impl PySeverity {
 // CATEGORY ENUM
 // ============================================================================
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone)]
 pub enum PyCategory {
     Reliability,
@@ -247,7 +247,7 @@ impl PyCategory {
 // EXECUTION MODE ENUM
 // ============================================================================
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone)]
 pub enum PyExecutionMode {
     Static,
@@ -477,7 +477,7 @@ impl PyDagParser {
 // DBT MODEL CLASS
 // ============================================================================
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone)]
 pub struct PyDbtModel {
     #[pyo3(get, set)]
@@ -536,7 +536,7 @@ fn convert_dbt_model(model: DbtModel) -> PyDbtModel {
 // DBT TEST CLASS
 // ============================================================================
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone)]
 pub struct PyDbtTest {
     #[pyo3(get)]

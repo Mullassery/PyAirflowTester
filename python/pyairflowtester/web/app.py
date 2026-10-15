@@ -259,8 +259,8 @@ def create_app(
         """List all DAGs/tasks/models/etc. currently in the dependency graph."""
         nodes = sorted(graph.nodes.values(), key=lambda n: (n.type.value, n.name))
         template = _env.get_template("index.html")
-        return template.render(
-            nodes=nodes, node_count=len(graph.nodes), edge_count=len(graph.edges)
+        return str(
+            template.render(nodes=nodes, node_count=len(graph.nodes), edge_count=len(graph.edges))
         )
 
     @app.get("/nodes/{node_id}", response_class=HTMLResponse)
@@ -271,7 +271,7 @@ def create_app(
         dashboard = builder.build_node_dashboard(node_id)
         content = Markup(_render_value(dashboard))
         template = _env.get_template("node.html")
-        return template.render(node_id=node_id, dashboard=dashboard, content=content)
+        return str(template.render(node_id=node_id, dashboard=dashboard, content=content))
 
     @app.get("/health", response_class=HTMLResponse)
     def health_dashboard() -> str:
@@ -279,7 +279,7 @@ def create_app(
         dashboard = builder.build_health_dashboard()
         content = Markup(_render_value(dashboard))
         template = _env.get_template("health.html")
-        return template.render(content=content)
+        return str(template.render(content=content))
 
     return app
 

@@ -39,6 +39,7 @@ dev = [
     "mypy>=1.7.1",
     "pre-commit>=3.5.0",
     "httpx>=0.24.0",  # required by fastapi.testclient.TestClient, used in web tests
+    "setuptools>=83.0.0",
 ]
 
 web = [
