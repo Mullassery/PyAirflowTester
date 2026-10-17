@@ -5,7 +5,7 @@ A correlation-first reliability and quality platform that combines static analys
 runtime monitoring, and intelligent correlation to prevent data pipeline failures.
 """
 
-__version__ = "0.5.2"
+__version__ = "0.5.3"
 __author__ = "PyAirflowTester Contributors"
 __license__ = "Apache-2.0"
 
