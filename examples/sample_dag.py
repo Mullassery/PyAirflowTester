@@ -5,10 +5,11 @@ This DAG demonstrates various patterns that PyAirflowTester analyzes.
 """
 
 from datetime import datetime, timedelta
+
 from airflow import DAG
+from airflow.operators.bash import BashOperator
 from airflow.operators.dummy import DummyOperator
 from airflow.operators.python import PythonOperator
-from airflow.operators.bash import BashOperator
 
 # Good practice: Define defaults
 default_args = {

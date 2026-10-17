@@ -1,14 +1,14 @@
 """Example usage of PyAirflowTester Dependency Intelligence Engine."""
 
 from pyairflowtester.dependency_intelligence import (
-    UnifiedGraphBuilder,
-    DependencyGraphEngine,
-    ImpactAnalysisEngine,
     BlastRadiusEngine,
-    RiskScoringEngine,
+    DependencyGraphEngine,
     DriftDetectionEngine,
+    ImpactAnalysisEngine,
     NodeSeverity,
     NodeType,
+    RiskScoringEngine,
+    UnifiedGraphBuilder,
 )
 
 
@@ -31,14 +31,14 @@ def example_1_build_graph():
 
     # Display graph statistics
     stats = graph.stats()
-    print(f"\nGraph Statistics:")
+    print("\nGraph Statistics:")
     print(f"  Total Nodes: {stats['node_count']}")
     print(f"  Total Edges: {stats['edge_count']}")
     print(f"  Critical Nodes: {stats['critical_nodes']}")
     print(f"  Version: {stats['version']}")
 
     # Display node type breakdown
-    print(f"\nNode Types:")
+    print("\nNode Types:")
     for node_type, count in stats["node_types"].items():
         print(f"  {node_type.value}: {count}")
 
@@ -58,13 +58,13 @@ def example_2_impact_analysis(graph):
     print("\nAnalyzing impact of changing 'dag_raw_orders'...")
     result = impact_engine.analyze("dag_raw_orders", max_depth=10)
 
-    print(f"\nImpact Analysis Results:")
+    print("\nImpact Analysis Results:")
     print(f"  Impacted Nodes: {len(result.impacted_nodes)}")
     print(f"  Max Impact Depth: {result.impact_depth}")
     print(f"  Impact Score: {result.impact_score:.2%}")
 
     # Show breakdown by severity
-    print(f"\nImpacted Nodes by Severity:")
+    print("\nImpacted Nodes by Severity:")
     for severity in [
         NodeSeverity.CRITICAL,
         NodeSeverity.HIGH,
@@ -81,7 +81,7 @@ def example_2_impact_analysis(graph):
                     print(f"    - {node.name}")
 
     # Show breakdown by type
-    print(f"\nImpacted Nodes by Type:")
+    print("\nImpacted Nodes by Type:")
     for node_type in [NodeType.DAG, NodeType.TASK, NodeType.DBT_MODEL]:
         nodes = result.by_type.get(node_type, [])
         if nodes:
@@ -105,7 +105,7 @@ def example_3_blast_radius(graph):
 
     result = blast_engine.analyze(changed_nodes)
 
-    print(f"\nBlast Radius Results:")
+    print("\nBlast Radius Results:")
     print(f"  Changed Nodes: {len(result.change_nodes)}")
     print(f"  Affected Nodes: {result.blast_radius}")
     print(f"  Blast Depth: {result.blast_depth}")
@@ -113,7 +113,7 @@ def example_3_blast_radius(graph):
     print(f"  Safe to Deploy: {'✓ YES' if result.deployable else '✗ NO'}")
 
     # Show severity distribution
-    print(f"\nSeverity Distribution of Affected Nodes:")
+    print("\nSeverity Distribution of Affected Nodes:")
     for severity, count in sorted(
         result.severity_distribution.items(), key=lambda x: x[0].value, reverse=True
     ):
@@ -121,11 +121,11 @@ def example_3_blast_radius(graph):
 
     # Recommendation
     if not result.deployable:
-        print(f"\n⚠ WARNING: High-risk deployment!")
-        print(f"  Recommendation: Review affected critical/high nodes")
+        print("\n⚠ WARNING: High-risk deployment!")
+        print("  Recommendation: Review affected critical/high nodes")
         print(f"  Risk factors: {result.risk_level} impact across {result.blast_radius} nodes")
     else:
-        print(f"\n✓ APPROVED: Safe to deploy")
+        print("\n✓ APPROVED: Safe to deploy")
 
     return result
 
@@ -152,7 +152,7 @@ def example_4_cycle_detection(graph):
             )
             print(f"  {cycle_path}")
     else:
-        print(f"\n✓ No circular dependencies found!")
+        print("\n✓ No circular dependencies found!")
 
     return cycles
 
@@ -169,13 +169,13 @@ def example_5_orphan_detection(graph):
     # Detect orphans
     orphans = engine.detect_orphans()
 
-    print(f"\nOrphan Detection Results:")
+    print("\nOrphan Detection Results:")
     print(f"  Sources (no incoming): {len(orphans['sources'])}")
     print(f"  Sinks (no outgoing): {len(orphans['sinks'])}")
     print(f"  Isolated: {len(orphans['isolated'])}")
 
     if orphans["isolated"]:
-        print(f"\nIsolated Nodes:")
+        print("\nIsolated Nodes:")
         for node_id in orphans["isolated"][:10]:
             node = graph.nodes.get(node_id)
             if node:
@@ -201,7 +201,7 @@ def example_6_risk_scoring(graph):
     sorted_scores = sorted(all_scores.items(), key=lambda x: x[1].risk_score, reverse=True)
 
     # Show top 10 highest risk nodes
-    print(f"\nTop 10 Highest Risk Nodes:")
+    print("\nTop 10 Highest Risk Nodes:")
     print(f"{'Node':<25} {'Score':<8} {'Severity':<12} {'Factors':<30}")
     print("-" * 75)
 
@@ -218,7 +218,7 @@ def example_6_risk_scoring(graph):
             )
 
     # Show risk distribution
-    print(f"\nRisk Score Distribution:")
+    print("\nRisk Score Distribution:")
     critical_count = sum(1 for r in all_scores if r[1].risk_score >= 8.0)
     high_count = sum(1 for r in all_scores if 6.0 <= r[1].risk_score < 8.0)
     medium_count = sum(1 for r in all_scores if 3.0 <= r[1].risk_score < 6.0)
@@ -250,21 +250,21 @@ def example_7_drift_detection(current_graph, previous_version_graph=None):
     # Detect drift
     result = drift_engine.detect_drift()
 
-    print(f"\nDrift Detection Results:")
+    print("\nDrift Detection Results:")
     print(f"  Drifts Detected: {result.drift_count}")
     print(f"  Affected Nodes: {len(result.affected_nodes)}")
     print(f"  Severity: {result.severity.value}")
 
     if result.detected_drifts:
-        print(f"\nChanges Detected:")
+        print("\nChanges Detected:")
         for drift in result.detected_drifts:
             print(f"  - {drift['type']}: {drift.get('count', '?')} changes")
 
-        print(f"\nDetails:")
+        print("\nDetails:")
         for detail in result.details:
             print(f"  - {detail}")
     else:
-        print(f"\n✓ No drift detected (graphs are identical)")
+        print("\n✓ No drift detected (graphs are identical)")
 
     return result
 
@@ -289,7 +289,7 @@ def example_8_advanced_queries(graph):
         path_str = " → ".join([graph.nodes.get(n, type("", (), {"name": n})()).name for n in path])
         print(f"  Path: {path_str}")
     else:
-        print(f"  No path found (nodes are disconnected)")
+        print("  No path found (nodes are disconnected)")
 
     # Query 3: Get nodes by owner
     print("\nQuery 3: Nodes owned by 'data-team'")

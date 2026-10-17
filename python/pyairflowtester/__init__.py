@@ -7,7 +7,7 @@ runtime monitoring, and intelligent correlation to prevent data pipeline failure
 
 __version__ = "0.5.2"
 __author__ = "PyAirflowTester Contributors"
-__license__ = "SSPL-1.0"
+__license__ = "Apache-2.0"
 
 try:
     from pyairflowtester._core import (

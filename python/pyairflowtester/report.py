@@ -10,6 +10,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
 
+from pyairflowtester import __version__
+
 logger = logging.getLogger(__name__)
 
 
@@ -174,7 +176,7 @@ Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
                     "tool": {
                         "driver": {
                             "name": "PyAirflowTester",
-                            "version": "0.1.0",
+                            "version": __version__,
                             "informationUri": "https://github.com/mullassery/pyairflowtester",
                         }
                     },
