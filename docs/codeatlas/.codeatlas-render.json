@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "outputs": {
+    "md": [
+      "db.1.md",
+      "docs.2.md",
+      "overview.md",
+      "pyairflowtester.4.1.md",
+      "python.4.md",
+      "tools.7.md"
+    ],
+    "html": [
+      "db.1.html",
+      "docs.2.html",
+      "overview.html",
+      "pyairflowtester.4.1.html",
+      "python.4.html",
+      "tools.7.html"
+    ]
+  }
+}
