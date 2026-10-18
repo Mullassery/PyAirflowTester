@@ -5,6 +5,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.5.4] - 2026-10-18
+
+### Changed
+- `examples/github_workflow.yml` is now explicitly labelled as a
+  non-production template and no longer swallows errors from the risk-score
+  step; the report-first behavior is documented so the example is not
+  mistaken for a silent, non-blocking quality gate (RECHECK-006).
+
 ## [0.5.3] - 2026-10-17
 
 ### Fixed

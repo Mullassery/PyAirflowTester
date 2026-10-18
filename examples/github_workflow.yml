@@ -1,3 +1,12 @@
+# EXAMPLE / TEMPLATE — copy into .github/workflows/ and adapt before use.
+#
+# This is an illustrative workflow, not a production quality gate. The scan
+# steps are intentionally report-first: `continue-on-error: true` keeps the
+# job green while findings are uploaded (SARIF + HTML artifact) so reviewers
+# see them before anything is enforced. The *actual* gate is the final
+# "Fail if critical violations found" step. If you want scans to block
+# immediately, delete the `continue-on-error: true` lines below and set the
+# severity threshold you intend to enforce.
 name: PyAirflowTester Analysis
 
 on:
@@ -48,7 +57,7 @@ jobs:
       - name: Calculate Risk Score
         id: score
         run: |
-          pyairflowtester score . > score.txt || true
+          pyairflowtester score . > score.txt
           cat score.txt
 
       - name: Generate HTML Report
