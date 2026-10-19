@@ -5,6 +5,23 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Changed
+- Audited the unwired Rust crate (`src/*.rs`) against the Python implementation and
+  decided not to ship or expose it. The crate duplicates Python parsing/scoring, has no
+  production rules, and its PyO3 surface contains stubs (`evaluate_rules` fabricates
+  `info` findings; `PyRuleEngine` cannot register or evaluate rules). Its DAG parser is
+  real but overlaps the Python AST parser and AFW001/AFW003, and `cargo test`/`cargo build`
+  still fail to link on macOS arm64. README and `ROADMAP_HONEST.md` now document this
+  precisely, including the crate's current `cargo audit` advisories.
+- Removed the opportunistic `pyairflowtester._core` import and its `None` placeholder
+  exports (`PyRule`, `PyDagParser`, `PyScorer`, etc.) from `pyairflowtester/__init__.py`.
+  The shipped package now exposes only Python features that actually exist.
+- `make test` runs the shipped Python suite instead of `cargo test`, and `make build` uses
+  the real hatchling build (`python -m build`) instead of the removed maturin packaging
+  path. Rust-only lint/format/test commands are separate, clearly optional targets.
+- Aligned `__version__` (package and `dependency_intelligence`) and the Cargo package
+  version with the 0.5.4 distribution version.
+
 ## [0.5.4] - 2026-10-18
 
 ### Changed

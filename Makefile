@@ -1,4 +1,4 @@
-.PHONY: help install install-dev test test-rust test-python test-integration lint format clean build docs
+.PHONY: help install install-dev test test-rust test-python test-integration lint lint-rust format format-rust clean build docs
 
 help:
 	@echo "PyAirflowTester - Development Commands"
@@ -8,18 +8,20 @@ help:
 	@echo "  make install-dev          Install with dev dependencies"
 	@echo ""
 	@echo "Testing:"
-	@echo "  make test                 Run all tests"
-	@echo "  make test-rust            Run Rust tests"
+	@echo "  make test                 Run the shipped Python test suite"
+	@echo "  make test-rust            Run optional Rust crate tests (not shipped)"
 	@echo "  make test-python          Run Python tests"
 	@echo "  make test-integration     Run integration tests"
 	@echo ""
 	@echo "Code Quality:"
-	@echo "  make lint                 Run linters (ruff, clippy)"
-	@echo "  make format               Format code (black, rustfmt)"
+	@echo "  make lint                 Run Python linters"
+	@echo "  make lint-rust            Run optional Rust linter (not shipped)"
+	@echo "  make format               Format Python code"
+	@echo "  make format-rust          Format optional Rust crate"
 	@echo "  make type-check           Run type checking (mypy)"
 	@echo ""
 	@echo "Build:"
-	@echo "  make build                Build wheels"
+	@echo "  make build                Build the pure-Python wheel and sdist"
 	@echo "  make docs                 Build documentation"
 	@echo ""
 	@echo "Cleanup:"
@@ -32,10 +34,10 @@ install-dev:
 	pip install -e ".[dev,web]"
 	pre-commit install
 
-test: test-rust test-python
+test: test-python
 
 test-rust:
-	@echo "Running Rust tests..."
+	@echo "Running optional Rust crate tests (not part of the shipped package)..."
 	cargo test --verbose
 
 test-python:
@@ -49,23 +51,27 @@ test-integration:
 lint:
 	@echo "Linting Python code..."
 	ruff check python/
-	@echo "Linting Rust code..."
+
+lint-rust:
+	@echo "Linting optional Rust crate (not shipped)..."
 	cargo clippy -- -D warnings
 
 format:
 	@echo "Formatting Python code..."
 	black python/
-	@echo "Formatting Rust code..."
+
+format-rust:
+	@echo "Formatting optional Rust crate..."
 	cargo fmt
 
 type-check:
 	@echo "Type checking Python code..."
-	mypy python/pyairflowtester --ignore-missing-imports || true
+	mypy python/pyairflowtester --ignore-missing-imports
 
 build:
-	@echo "Building Python wheels..."
-	pip install maturin
-	maturin build --release
+	@echo "Building the pure-Python package (hatchling)..."
+	pip install build
+	python -m build
 
 docs:
 	@echo "Building documentation..."

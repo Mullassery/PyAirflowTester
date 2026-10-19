@@ -46,13 +46,12 @@ itself):
   dynamically-built task graphs; it runs in a resource-limited subprocess, but "resource
   limits" is not the same as a real sandbox — don't run it against untrusted DAG files.
 - **`cargo audit` (see `.github/workflows/ci.yml`, `security-scan` job) currently finds real
-  advisories** in the (unused-by-the-shipped-package) Rust crate's dependency tree: sqlx 0.7.4
-  (RUSTSEC-2024-0363, needs >=0.8.1) and a rustls-related advisory (RUSTSEC-2026-0098), plus 2
-  unmaintained-crate warnings. The job is `continue-on-error: true` so it's visible without
-  blocking merges. Since the Rust crate is not built or shipped as part of the published
-  Python package (see README "Architecture"), this does not affect `pip install
-  pyairflowtester` users, but it is a real, unresolved item for anyone who does `maturin
-  develop`/build it.
+  advisories** in the (unused-by-the-shipped-package) Rust crate's dependency tree. Re-run
+  2026-10-20: four rustls advisories on 0.23.45 (RUSTSEC-2026-0346, -0347, -0348, -0349; fixed
+  in >=0.23.46). The job is `continue-on-error: true` so it's visible without blocking merges.
+  Since the Rust crate is not built or shipped as part of the published Python package (see
+  README "Rust crate status"), this does not affect `pip install pyairflowtester` users, but
+  it is a real, unresolved item for anyone who does `maturin develop`/build it.
 - **`pip-audit` (new as of this pass, see `ci.yml`) found no known vulnerabilities** in the
   Python runtime + dev + web dependency set as of 2026-09-19 — re-run it yourself
   (`pip-audit`) since this drifts as new CVEs are published.

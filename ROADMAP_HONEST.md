@@ -7,6 +7,10 @@ suite, starting `pyairflowtester serve` and hitting its routes, running `actionl
 not carried forward from old docs without verification. See README.md for the user-facing
 version of "what works today."
 
+**2026-10-20 Rust audit**: inspected every module in `src/`, `Cargo.toml`, `pyproject.toml`,
+and the Python CLI/package. Confirmed the Rust crate is unwired and duplicates Python; it is
+not shipped or exposed. See bucket 4 and README's "Rust crate status".
+
 **2026-09-27 deep bug-hunt pass**: read every module in `python/pyairflowtester/` line by
 line tracing real data flow (not linting/grepping), verified each suspicion with a concrete
 reproduction before treating it as real, and fixed what was trivial with a regression test.
@@ -98,9 +102,10 @@ below (not fixed) because fixing them properly is a design decision, not a drive
   rule families.
 - **`scanner.py`: 66% coverage**, **`analyzer.py`: 56%** (the unimplemented-stub paths,
   expected), **`observability.py`: 84%**, **`parsers.py`: 72%**.
-- Rust crate (`src/*.rs`): `cargo clippy -- -D warnings` passes cleanly (verified). `cargo
-  test`/`cargo build --release` were **not** verified to pass — see bucket 3, this is a real
-  build/link failure, not just "untested."
+- Rust crate (`src/*.rs`): not part of the shipped package. `cargo clippy -- -D warnings`
+  passes cleanly (re-verified 2026-10-20). `cargo test`/`cargo build --release` fail to link
+  on macOS arm64 (see bucket 3). The crate has 28 `#[test]` functions, but they are not part
+  of the Python suite or any release gate. Audit and shipping decision: bucket 4.
 
 ## 3. CI / build errors, actually broken (verified, not assumed)
 
@@ -110,7 +115,7 @@ below (not fixed) because fixing them properly is a design decision, not a drive
   ld: symbol(s) not found for architecture arm64
   Undefined symbols: _Py_InitializeEx, _PyUnicode_..., _PyType_..., etc.
   ```
-  Root cause: `Cargo.toml:15` sets `pyo3 = { version = "0.20", features =
+  Root cause: `Cargo.toml` sets `pyo3 = { version = "0.29", features =
   ["extension-module"] }`. That feature deliberately omits linking against `libpython`
   (correct for building a `cdylib` that Python `dlopen`s and resolves symbols for at
   runtime) — but it also breaks `cargo test`/plain `cargo build` for the same crate, which
@@ -121,10 +126,11 @@ below (not fixed) because fixing them properly is a design decision, not a drive
   Linux's lazy ELF symbol resolution can mask this at link time in ways macOS's linker
   doesn't, so it may well pass there while being broken for any contributor on macOS. This
   environment's sandboxed network couldn't reach `api.github.com` to check actual recent run
-  history (PyPI and readthedocs.io were reachable; `gh run list` timed out). **This needs a
-  dedicated follow-up**: either feature-gate `extension-module` behind a non-default Cargo
-  feature so `cargo test` works out of the box, or explicitly document that Rust-side testing
-  requires `maturin develop`-style invocation instead of bare `cargo test`.
+  history (PyPI and readthedocs.io were reachable; `gh run list` timed out). Re-confirmed
+  on macOS arm64 on 2026-10-20. If the crate is kept, this needs a dedicated follow-up
+  (feature-gate `extension-module` behind a non-default Cargo feature, or document that
+  Rust-side testing requires `maturin develop`); the current decision is not to ship the
+  crate at all (bucket 4).
 - ~~**mypy: 36 real type errors, invisible in CI.**~~ **Fixed 2026-09-21.** All 36 errors
   triaged and resolved (`mypy python/pyairflowtester --ignore-missing-imports` is clean); the
   `|| true` in `ci.yml`'s mypy step has been removed, so mypy now actually gates CI. Notable
@@ -166,12 +172,11 @@ below (not fixed) because fixing them properly is a design decision, not a drive
   Verified: `mypy python/pyairflowtester --ignore-missing-imports` clean, `ruff check
   python/` clean, `black --check python/` clean, full `pytest python/tests/` still 205
   passed (no regressions from the annotation/typing changes).
-- **`cargo audit` finds real advisories** (already surfaced by a prior session, still
-  unresolved as of this pass, confirmed still present): sqlx 0.7.4 (RUSTSEC-2024-0363, needs
-  >=0.8.1) and a rustls-related advisory (RUSTSEC-2026-0098), plus 2 unmaintained-crate
-  warnings. `continue-on-error: true` in `ci.yml`, so visible but non-blocking. Doesn't affect
-  the shipped Python package (Rust crate isn't built into it), but is a real, unresolved item
-  for the Rust crate's own dependency tree.
+- **`cargo audit` finds real advisories in the unwired Rust crate** (re-run 2026-10-20):
+  four rustls advisories on rustls 0.23.45 (RUSTSEC-2026-0346, -0347, -0348, -0349; all fixed
+  in >=0.23.46). `continue-on-error: true` in `ci.yml`, so visible but non-blocking. Doesn't
+  affect the shipped Python package (the Rust crate isn't built into it), but is a real,
+  unresolved item for the crate's own dependency tree.
 - **`codecov/codecov-action@v4` (bumped from the actionlint-flagged `v3` this pass) requires
   a `CODECOV_TOKEN` secret even for public repos as of v4** — whether that secret is
   configured on this GitHub repo was **not verified** (no `gh`/API access in this sandbox to
@@ -212,12 +217,13 @@ below (not fixed) because fixing them properly is a design decision, not a drive
 - **Postgres-backed integration test suite.** `python/tests/integration/` does not exist.
   The `integration-tests` CI job stands up a real Postgres service container and then no-ops
   because there's nothing to run against it.
-- **Rust core wired into the CLI.** `src/*.rs` (PyO3 bindings) is a separate, independent
-  reimplementation of some rule/parsing/scoring logic. `pyairflowtester/__init__.py` imports
-  it opportunistically and falls back to `None`; nothing in the CLI calls into it even when
-  built. This is a real architectural fork that needs a decision (reconcile the two
-  implementations and wire it in for real, or drop the Rust crate) — not something to leave
-  ambiguous indefinitely, per the README's own roadmap.
+- **Shipping or exposing the Rust crate.** Audited 2026-10-20 and deliberately rejected.
+  `src/*.rs` duplicates Python parsing/scoring, implements no production rules, and its PyO3
+  surface contains stubs (`evaluate_rules` fabricates findings; `PyRuleEngine` cannot
+  register or evaluate rules). It is not built into the wheel or imported by the CLI; the
+  `None` placeholder exports were removed from `python/pyairflowtester/__init__.py`. See
+  README's "Rust crate status". The crate remains only as an unwired experiment and should
+  be deleted later if it stays unused.
 - **GDPR/HIPAA/SOX/CCPA "compliance features", RBAC "support", "SLA enforcement"** as
   previously described in SECURITY.md — these were fabricated/mislabeled claims removed
   during this pass (see SECURITY.md's "What is NOT true, corrected here" section for the
@@ -228,9 +234,9 @@ below (not fixed) because fixing them properly is a design decision, not a drive
 ## Not attempted in this pass, and why
 
 - **`docs/architecture/README.md` with Mermaid diagrams** — not added. The existing prose
-  "Architecture" section in README.md (two independent things: Python CLI vs. unwired Rust
-  crate) is a two-paragraph explanation; a diagram wouldn't add information a paragraph
-  doesn't already convey, and none of the actual runtime data flows (graph construction →
+  "Rust crate status" section in README.md (Python CLI vs. unwired Rust crate) is a
+  two-paragraph explanation; a diagram wouldn't add information a paragraph doesn't already
+  convey, and none of the actual runtime data flows (graph construction →
   analysis engines → optional web rendering) are complex enough to need one yet. Revisit if
   the dependency-intelligence engine count grows.
 - **Reorganizing `python/` into a `src/` layout** — not done. `python/pyairflowtester/` +

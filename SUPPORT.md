@@ -23,7 +23,7 @@ A: Python 3.10, 3.11, 3.12 (this is the actual CI test matrix — see
 **Q: Do I need Rust installed?**
 A: No. As of v0.3.0 this ships as a **pure Python** package (`hatchling` build backend, no
 compiled extension). The Rust crate in `src/*.rs` is a separate, unwired experiment — the
-CLI never imports or calls into it (see README "Architecture"). You do not need a Rust
+CLI never imports or calls into it (see README "Rust crate status"). You do not need a Rust
 toolchain to install, run, or develop the supported (Python) parts of this project.
 
 **Q: Can I use this with Airflow 1.x?**
@@ -68,7 +68,7 @@ A: Ensure PyAirflowTester is installed: `pip install pyairflowtester`
 A: You should never hit this from a normal install — `pip install pyairflowtester` installs a
 pure Python package, no compilation involved. Rust compilation is only possible if you
 deliberately `maturin develop` the unwired experimental crate in `src/*.rs` (see README
-"Architecture"); it has no effect on the CLI either way.
+"Rust crate status"); it has no effect on the CLI either way.
 
 **Q: CLI commands not recognized?**
 A: Try full path: `python -m pyairflowtester.cli` or reinstall with `pip install --force-reinstall pyairflowtester`

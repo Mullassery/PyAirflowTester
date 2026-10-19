@@ -9,7 +9,7 @@ updates:
     open-pull-requests-limit: 10
 
   # Rust crate (src/*.rs) -- kept updated even though it's not wired into
-  # the shipped CLI (see README "Architecture"), since cargo-audit in
+  # the shipped CLI (see README "Rust crate status"), since cargo-audit in
   # ci.yml already found real advisories in its dependency tree.
   - package-ecosystem: "cargo"
     directory: "/"

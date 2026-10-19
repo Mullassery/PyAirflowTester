@@ -49,7 +49,7 @@ Enhancement suggestions are tracked as GitHub issues. Include:
 - Git
 - **Rust toolchain: not required.** This ships as a pure Python package; you only need Rust
   if you're deliberately working on the separate, unwired experimental crate in `src/*.rs`
-  (see README.md "Architecture").
+  (see README.md "Rust crate status").
 
 ### Installation
 
@@ -107,9 +107,9 @@ python -m build   # produces dist/*.whl and dist/*.tar.gz, pure Python, no Rust 
 
 ```bash
 pip install maturin
-maturin build --release   # or `maturin develop` to import it locally as pyairflowtester._core
+maturin build --release   # or `maturin develop`, then import pyairflowtester._core explicitly
 ```
-Nothing in the CLI calls into this even if you build it — see README.md "Architecture".
+Nothing in the CLI or package imports this even if you build it — see README.md "Rust crate status".
 Note: on at least macOS arm64, `cargo test`/`cargo build --release` on this crate can fail to
 link (`ld: symbol(s) not found ... _Py_InitializeEx` etc.) because `pyo3`'s
 `extension-module` feature (`Cargo.toml`) deliberately doesn't link against libpython —

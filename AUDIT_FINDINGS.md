@@ -21,7 +21,7 @@ Static analysis and dependency intelligence for Airflow DAGs and dbt projects: r
 ## Verified gaps and user-facing risks
 
 - Runtime correlation is explicitly stubbed (`AnalyzerNotImplementedError`).
-- Rust core exists but is not wired into the CLI and not shipped; pure-Python package.
+- Rust crate exists but is not wired into the CLI and deliberately not shipped (it duplicates Python, contains stubs, and does not build/test cleanly on macOS arm64); pure-Python package. See README "Rust crate status".
 - Alpha; no large real-DAG corpus validation; no GitHub release.
 
 ## Direct competitors

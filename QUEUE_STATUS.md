@@ -1,4 +1,4 @@
-# Queue status — 2026-10-19
+# Queue status — 2026-10-20
 
 This file records what was shipped, what is blocked/failed, and what is rejected for this repository. It complements `AUDIT_FINDINGS.md`.
 
@@ -10,6 +10,9 @@ This file records what was shipped, what is blocked/failed, and what is rejected
 
 ## Rejected / deferred
 - A test runner.
+- Shipping or exposing the Rust crate in `src/*.rs`. Audited 2026-10-20: it duplicates
+  Python parsing/scoring, implements no production rules, and exposes stubs; see README
+  "Rust crate status".
 
 ## Policy
 

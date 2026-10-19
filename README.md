@@ -51,12 +51,26 @@ PyAirflowTester helps you catch reliability and security issues before deploymen
 
 - **Not a live runtime correlator**: The `Analyzer`/`connect` path for correlating against live Airflow metadata or dbt run history is explicitly stubbed (`AnalyzerNotImplementedError`).
 - **Not a test runner**: It analyzes structure and metadata, not executes DAGs or dbt tests.
-- **Pure Python by default**: A Rust core exists in `src/` but is not wired into the CLI and not shipped; building it is optional.
-- **Alpha maturity**: v0.5.2 - core scanning, graph analysis, and scoring are working; runtime correlation is planned.
+- **Pure Python only (shipped)**: The installable package is built with hatchling from `python/pyairflowtester` and contains no compiled extension. `src/*.rs` is an unwired PyO3 experiment, not part of the wheel, CLI, or supported API. See [Rust crate status](#rust-crate-status-not-shipped).
+- **Alpha maturity**: v0.5.4 - core scanning, graph analysis, and scoring are working; runtime correlation is planned.
+
+## Rust crate status (not shipped)
+
+`src/*.rs` is an independent PyO3 experiment, not a "core" used by the Python package. It is not built by `pyproject.toml` (hatchling packages only `python/pyairflowtester`), not imported by the CLI, and not installed in the wheel. The audit below (2026-10-20) is why it stays unwired:
+
+| Module | What it contains | Assessment |
+| --- | --- | --- |
+| `dag_parser.rs` | Regex-based DAG parser: DAG ID, task IDs, `>>`/`<<` and `set_upstream`/`set_downstream` edges, longest task chain, cycle detection, dynamic-DAG detection, expensive imports, external dependencies. 16 unit tests. | Real code, but duplicates the Python AST parser (`dependency_intelligence/parsers.py`) and rules AFW001/AFW003. Bare `cargo test` does not link on macOS arm64 in this configuration, so these tests do not run in the supported dev flow. |
+| `dbt_parser.rs` | Manifest, catalog, and run-results readers; model/test/lineage extraction. | Real but only constructor tests (3). Duplicates the Python manifest parser and uses substring matching for lineage, which can create false edges. |
+| `scoring.rs` | Risk, health, trend, and priority arithmetic. | Duplicates `scoring.py`, and its risk formula still has the pre-0.5.2 inverted severity-to-risk behavior. |
+| `rule_engine.rs` | Generic `Rule` trait, enums, and engine. | Framework only; no production rules are implemented. Python has 33 concrete rules. |
+| `lib.rs` | PyO3 wrappers. | Not usable as an API: `PyRuleEngine` cannot register or evaluate rules, `evaluate_rules` returns fabricated `info` findings, and `PyScorer` exposes only one method. |
+
+Decision: do not ship or expose it. No Rust-only behavior is both unique and trustworthy. The only capabilities Python lacks (longest task depth, dynamic-DAG and external-dependency flags) are unused metadata and are straightforward to add to the Python parser if needed. Shipping PyO3 would require compiled wheels and a Rust toolchain for no user-facing benefit, and exposing the current stubs would be misleading. The crate remains in the repository only as an unwired experiment; it is not on the release or integration path.
 
 ## Project status
 
-Version 0.5.2. Core commands (`scan`, `score`, `rules`, `dependency ...`, `serve`) are functional. The runtime correlation feature is stubbed (not implemented). See [ROADMAP_HONEST.md](ROADMAP_HONEST.md) for details.
+Version 0.5.4. Core commands (`scan`, `score`, `rules`, `dependency ...`, `serve`) are functional. The runtime correlation feature is stubbed (not implemented). See [ROADMAP_HONEST.md](ROADMAP_HONEST.md) for details.
 
 ## Installation
 

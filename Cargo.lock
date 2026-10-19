@@ -1284,7 +1284,7 @@ dependencies = [
 
 [[package]]
 name = "pyairflowtester"
-version = "0.5.2"
+version = "0.5.4"
 dependencies = [
  "anyhow",
  "chrono",
