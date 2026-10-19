@@ -121,6 +121,16 @@ blast = BlastRadiusEngine(graph).analyze(["dag_my_dag"])
 print(f"Blast radius: {blast.blast_radius} nodes, deployable: {blast.deployable}")
 ```
 
+## Known issues and deferred work
+
+**Blocked / failed:**
+- Runtime correlation via Airflow REST/dbt run_results.
+
+**Rejected / deferred:**
+- A test runner.
+
+Full shipped/blocked/rejected detail: [`QUEUE_STATUS.md`](QUEUE_STATUS.md).
+
 ## Queue status
 
 Shipped, blocked/failed, and rejected work for this repository is documented in
