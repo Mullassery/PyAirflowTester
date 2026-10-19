@@ -121,6 +121,11 @@ blast = BlastRadiusEngine(graph).analyze(["dag_my_dag"])
 print(f"Blast radius: {blast.blast_radius} nodes, deployable: {blast.deployable}")
 ```
 
+## Queue status
+
+Shipped, blocked/failed, and rejected work for this repository is documented in
+[`QUEUE_STATUS.md`](QUEUE_STATUS.md).
+
 ## Documentation
 
 - [ROADMAP_HONEST.md](ROADMAP_HONEST.md) - Known limitations and planned work
