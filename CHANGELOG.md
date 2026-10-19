@@ -5,6 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+- Python AST DAG parser (`python/pyairflowtester/dag_parser.py`) now populates the
+  three metadata fields previously only computed by the unshipped Rust DAG parser:
+  `max_task_depth` (longest `>>`/`<<`/`set_upstream`/`set_downstream` dependency
+  chain), `dynamic_dag_detected` (loops, `globals()`, task groups, `expand()`), and
+  `external_dependencies` (external systems inferred from operator classes,
+  `conn_id` values, SQL strings, and imports). Exposed as `DagParser`,
+  `parse_dag_code`, `parse_dag_file`, and `parse_dag_directory`, plus
+  `DagDefinition.to_dict()` and the `pyairflowtester parse-dags` CLI command
+  (`--format json` for machine-readable output). Adds focused tests for linear,
+  branching, dynamic, and external-dependency DAG fixtures.
+
 ### Changed
 - Audited the unwired Rust crate (`src/*.rs`) against the Python implementation and
   decided not to ship or expose it. The crate duplicates Python parsing/scoring, has no

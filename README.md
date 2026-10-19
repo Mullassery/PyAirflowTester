@@ -32,6 +32,7 @@ PyAirflowTester helps you catch reliability and security issues before deploymen
 ## Features / Highlights
 
 - **Static analysis**: 33 rules covering DAGs, dbt manifests, and Airflow configuration (secrets, SLAs, cycles, config issues, etc.).
+- **Parsed DAG metadata**: AST-based task depth (longest dependency chain), dynamic-DAG detection (loops, `globals()`, task groups, dynamic task mapping), and external systems referenced by operator classes, `conn_id`, SQL, or imports.
 - **Unified dependency graph**: Combines Airflow DAG edges with dbt lineage from `manifest.json`.
 - **Impact & blast radius**: Understand what breaks downstream if a node changes.
 - **Risk scoring**: Aggregate 0-100 risk score with filtering by severity.
@@ -60,13 +61,13 @@ PyAirflowTester helps you catch reliability and security issues before deploymen
 
 | Module | What it contains | Assessment |
 | --- | --- | --- |
-| `dag_parser.rs` | Regex-based DAG parser: DAG ID, task IDs, `>>`/`<<` and `set_upstream`/`set_downstream` edges, longest task chain, cycle detection, dynamic-DAG detection, expensive imports, external dependencies. 16 unit tests. | Real code, but duplicates the Python AST parser (`dependency_intelligence/parsers.py`) and rules AFW001/AFW003. Bare `cargo test` does not link on macOS arm64 in this configuration, so these tests do not run in the supported dev flow. |
+| `dag_parser.rs` | Regex-based DAG parser: DAG ID, task IDs, `>>`/`<<` and `set_upstream`/`set_downstream` edges, longest task chain, cycle detection, dynamic-DAG detection, expensive imports, external dependencies. 16 unit tests. | Real code, but duplicates the Python AST parser (`dependency_intelligence/parsers.py`), the new `dag_parser.py` metadata parser, and rules AFW001/AFW003. Bare `cargo test` does not link on macOS arm64 in this configuration, so these tests do not run in the supported dev flow. |
 | `dbt_parser.rs` | Manifest, catalog, and run-results readers; model/test/lineage extraction. | Real but only constructor tests (3). Duplicates the Python manifest parser and uses substring matching for lineage, which can create false edges. |
 | `scoring.rs` | Risk, health, trend, and priority arithmetic. | Duplicates `scoring.py`, and its risk formula still has the pre-0.5.2 inverted severity-to-risk behavior. |
 | `rule_engine.rs` | Generic `Rule` trait, enums, and engine. | Framework only; no production rules are implemented. Python has 33 concrete rules. |
 | `lib.rs` | PyO3 wrappers. | Not usable as an API: `PyRuleEngine` cannot register or evaluate rules, `evaluate_rules` returns fabricated `info` findings, and `PyScorer` exposes only one method. |
 
-Decision: do not ship or expose it. No Rust-only behavior is both unique and trustworthy. The only capabilities Python lacks (longest task depth, dynamic-DAG and external-dependency flags) are unused metadata and are straightforward to add to the Python parser if needed. Shipping PyO3 would require compiled wheels and a Rust toolchain for no user-facing benefit, and exposing the current stubs would be misleading. The crate remains in the repository only as an unwired experiment; it is not on the release or integration path.
+Decision: do not ship or expose it. No Rust-only behavior is both unique and trustworthy. The three metadata fields Python previously lacked (`max_task_depth`, `dynamic_dag_detected`, `external_dependencies`) are now implemented by the Python AST parser in `python/pyairflowtester/dag_parser.py` and are exposed through the public `DagParser`/`DagDefinition` API and the `parse-dags` CLI. Shipping PyO3 would require compiled wheels and a Rust toolchain for no user-facing benefit, and exposing the current stubs would be misleading. The crate remains in the repository only as an unwired experiment; it is not on the release or integration path.
 
 ## Project status
 
@@ -106,6 +107,9 @@ pyairflowtester score . --dags dags/
 # List all rules
 pyairflowtester rules
 
+# Parse DAG metadata: max task depth, dynamic DAGs, external systems
+pyairflowtester parse-dags dags/ --format json
+
 # Build dependency graph and analyze blast radius
 pyairflowtester dependency build --dags dags/ --dbt-manifest dbt/target/manifest.json
 pyairflowtester dependency blast-radius -n dag_my_dag
@@ -115,6 +119,14 @@ pyairflowtester serve --port 8080
 ```
 
 ### Programmatic usage
+
+```python
+from pyairflowtester import DagParser
+
+dag = DagParser().parse_file("dags/my_dag.py")
+print(dag.dag_id, dag.max_task_depth, dag.dynamic_dag_detected)
+print(dag.external_dependencies)
+```
 
 ```python
 from pyairflowtester.dependency_intelligence import (

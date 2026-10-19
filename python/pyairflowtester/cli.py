@@ -2,6 +2,7 @@
 PyAirflowTester CLI: Command-line interface for artifact and runtime analysis.
 """
 
+import json
 import logging
 from pathlib import Path
 
@@ -10,6 +11,7 @@ from rich.console import Console
 from rich.table import Table
 
 from pyairflowtester.analyzer import Analyzer, AnalyzerNotImplementedError
+from pyairflowtester.dag_parser import DagParser
 from pyairflowtester.report import ReportGenerator
 from pyairflowtester.scanner import Scanner
 
@@ -180,6 +182,51 @@ def score(path, compare, format):
 
     if compare:
         console.print(f"\n[yellow]Comparing to baseline: {compare}[/yellow]")
+
+
+@main.command("parse-dags")
+@click.argument("path", type=click.Path(exists=True), default=".")
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["text", "json"]),
+    default="text",
+    help="Output format",
+)
+def parse_dags(path, output_format):
+    """
+    Parse DAG files and report task depth, dynamic DAGs, and external systems.
+
+    PATH may be a single DAG file or a directory of ``*.py`` DAG files.
+    """
+    parser = DagParser()
+    target = Path(path)
+    try:
+        dags = [parser.parse_file(target)] if target.is_file() else parser.parse_directory(target)
+    except (OSError, SyntaxError) as exc:
+        raise click.ClickException(f"Failed to parse {target}: {exc}") from exc
+
+    if output_format == "json":
+        click.echo(json.dumps({"dags": [dag.to_dict() for dag in dags]}, indent=2))
+        return
+
+    table = Table(title=f"Parsed DAGs ({len(dags)})")
+    table.add_column("DAG", style="cyan")
+    table.add_column("Tasks", justify="right")
+    table.add_column("Max Depth", justify="right")
+    table.add_column("Dynamic")
+    table.add_column("External Dependencies")
+
+    for dag in dags:
+        table.add_row(
+            dag.dag_id,
+            str(dag.task_count),
+            str(dag.max_task_depth),
+            "yes" if dag.dynamic_dag_detected else "no",
+            ", ".join(dag.external_dependencies) or "-",
+        )
+
+    console.print(table)
 
 
 @main.command()

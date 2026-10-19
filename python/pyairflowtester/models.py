@@ -71,6 +71,21 @@ class DagDefinition:
     expensive_imports: List[str] = field(default_factory=list)
     external_dependencies: List[str] = field(default_factory=list)
 
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to a JSON-serializable dictionary."""
+        return {
+            "dag_id": self.dag_id,
+            "file_path": self.file_path,
+            "parse_time_ms": self.parse_time_ms,
+            "task_count": self.task_count,
+            "task_ids": list(self.task_ids),
+            "max_task_depth": self.max_task_depth,
+            "has_cycles": self.has_cycles,
+            "dynamic_dag_detected": self.dynamic_dag_detected,
+            "expensive_imports": list(self.expensive_imports),
+            "external_dependencies": list(self.external_dependencies),
+        }
+
 
 @dataclass
 class DbtModel:

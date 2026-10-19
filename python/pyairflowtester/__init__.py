@@ -17,6 +17,13 @@ from pyairflowtester.column_lineage import (
     analyze_file,
     analyze_sql,
 )
+from pyairflowtester.dag_parser import (
+    DagParser,
+    parse_dag_code,
+    parse_dag_directory,
+    parse_dag_file,
+)
+from pyairflowtester.models import DagDefinition
 from pyairflowtester.openlineage import (
     LineageStore,
     RuntimeLineageSummary,
@@ -30,6 +37,11 @@ __all__ = [
     "Scanner",
     "Analyzer",
     "AnalyzerNotImplementedError",
+    "DagParser",
+    "DagDefinition",
+    "parse_dag_code",
+    "parse_dag_file",
+    "parse_dag_directory",
     "ColumnLineage",
     "LineageUnavailable",
     "analyze_sql",
