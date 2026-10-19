@@ -142,3 +142,25 @@ Full shipped/blocked/rejected detail: [`QUEUE_STATUS.md`](QUEUE_STATUS.md).
 ## License
 
 Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) for details.
+
+## OpenLineage runtime ingestion
+
+Ingest OpenLineage events emitted by Airflow/dbt/Spark into a local SQLite
+lineage store:
+
+```bash
+pyairflowtester openlineage events.ndjson --db runtime.sqlite
+pyairflowtester openlineage events.ndjson --db runtime.sqlite --format json
+```
+
+```python
+from pyairflowtester.openlineage import ingest_files
+
+summary = ingest_files(["events.ndjson"], "runtime.sqlite")
+print(summary.runs, summary.jobs, summary.datasets, summary.edges)
+```
+
+JSON arrays, single events and NDJSON are supported. Runs are idempotent by
+`(run_id, event_type)`, and job/dataset edges are deduplicated. This is an
+adapter over the Apache-2.0 OpenLineage schema, not a fork.
+

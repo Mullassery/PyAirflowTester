@@ -3,7 +3,7 @@
 This file records what was shipped, what is blocked/failed, and what is rejected for this repository. It complements `AUDIT_FINDINGS.md`.
 
 ## Shipped
-- No code changes; audit/bundle docs added.
+- OpenLineage runtime lineage ingestion and SQLGlot column-level SQL lineage (`pyairflowtester openlineage` / `columns`).
 
 ## Blocked / failed
 - Runtime correlation via Airflow REST/dbt run_results.

@@ -46,6 +46,19 @@ except ImportError:
     PyScorer = None
 
 from pyairflowtester.analyzer import Analyzer, AnalyzerNotImplementedError
+from pyairflowtester.column_lineage import (
+    ColumnLineage,
+    LineageUnavailable,
+    analyze_dbt_model,
+    analyze_file,
+    analyze_sql,
+)
+from pyairflowtester.openlineage import (
+    LineageStore,
+    RuntimeLineageSummary,
+    ingest_files,
+    load_events,
+)
 from pyairflowtester.report import ReportGenerator
 from pyairflowtester.scanner import Scanner
 
@@ -53,6 +66,15 @@ __all__ = [
     "Scanner",
     "Analyzer",
     "AnalyzerNotImplementedError",
+    "ColumnLineage",
+    "LineageUnavailable",
+    "analyze_sql",
+    "analyze_file",
+    "analyze_dbt_model",
+    "LineageStore",
+    "RuntimeLineageSummary",
+    "ingest_files",
+    "load_events",
     "ReportGenerator",
     "PyRule",
     "PyRuleViolation",

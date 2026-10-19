@@ -345,5 +345,56 @@ from pyairflowtester.dependency_intelligence.cli import register_dependency_cli 
 register_dependency_cli(main)
 
 
+@main.command("openlineage")
+@click.argument("events", nargs=-1, type=click.Path(exists=True))
+@click.option("--db", "db_path", type=click.Path(), default="airflow-runtime-lineage.sqlite")
+@click.option("--format", "output_format", type=click.Choice(["text", "json"]), default="text")
+def openlineage(events, db_path, output_format):
+    """Ingest OpenLineage JSON/NDJSON runtime events into a local store."""
+    import json as _json
+
+    from pyairflowtester.openlineage import ingest_files
+
+    try:
+        summary = ingest_files(events, db_path)
+    except Exception as exc:
+        raise click.ClickException(str(exc)) from exc
+    if output_format == "json":
+        click.echo(_json.dumps(summary.to_dict(), indent=2))
+    else:
+        click.echo(
+            f"runs={summary.runs} jobs={summary.jobs} "
+            f"datasets={summary.datasets} edges={summary.edges}"
+        )
+        click.echo(f"store: {db_path}")
+
+
+@main.command("columns")
+@click.argument("sql_file", type=click.Path(exists=True, dir_okay=False))
+@click.option("--dialect", default=None, help="SQLGlot dialect (e.g. snowflake, bigquery, duckdb)")
+@click.option("--format", "output_format", type=click.Choice(["text", "json"]), default="text")
+def columns(sql_file, dialect, output_format):
+    """Show column-level SQL lineage (output columns -> source columns)."""
+    import json as _json
+
+    from pyairflowtester.column_lineage import LineageUnavailable, analyze_file
+
+    try:
+        lineage = analyze_file(sql_file, dialect=dialect)
+    except LineageUnavailable as exc:
+        raise click.ClickException(str(exc)) from exc
+    except Exception as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    if output_format == "json":
+        click.echo(_json.dumps(lineage.to_dict(), indent=2))
+        return
+    click.echo(f"sources: {', '.join(lineage.sources) or '(none)'}")
+    for output, sources in lineage.outputs.items():
+        click.echo(f"  {output} <- {', '.join(sources) or '(unknown)'}")
+    for warning in lineage.warnings:
+        click.echo(f"  warning: {warning}")
+
+
 if __name__ == "__main__":
     main()
