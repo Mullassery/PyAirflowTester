@@ -90,7 +90,7 @@ jobs:
         # (tokenless upload was deprecated). No CODECOV_TOKEN secret was
         # verified to exist in this repo as part of this pass -- continue
         # on error so a missing/invalid token doesn't fail the whole job.
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v7
         continue-on-error: true
         with:
           files: ./coverage.xml
