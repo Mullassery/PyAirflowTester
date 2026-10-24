@@ -56,6 +56,8 @@ starts, and record the decision in the PR or changelog.
 
 ## OSS gap analysis — 2026-10-24
 
+**What matters most here:** runtime correlation and a CI gate. The analyzer raises `NotImplementedError` and `scan` always exits 0, so the tool cannot yet prove a DAG is safe or fail a pipeline. Finish the analyzer and add `--fail-on`.
+
 Scope: open-source tools that validate Airflow DAGs, dbt artifacts, or the
 Airflow/dbt boundary before deployment; runtime products are included where
 they overlap run-history work. Dates and licenses verified 2026-10-24.
