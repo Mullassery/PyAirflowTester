@@ -23,7 +23,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
   production rules, and its PyO3 surface contains stubs (`evaluate_rules` fabricates
   `info` findings; `PyRuleEngine` cannot register or evaluate rules). Its DAG parser is
   real but overlaps the Python AST parser and AFW001/AFW003, and `cargo test`/`cargo build`
-  still fail to link on macOS arm64. README and `ROADMAP_HONEST.md` now document this
+  still fail to link on macOS arm64. README and `docs/internal/ROADMAP_HONEST.md` now document this
   precisely, including the crate's current `cargo audit` advisories.
 - Removed the opportunistic `pyairflowtester._core` import and its `None` placeholder
   exports (`PyRule`, `PyDagParser`, `PyScorer`, etc.) from `pyairflowtester/__init__.py`.
@@ -417,7 +417,7 @@ Initial production release of PyAirflowTester with all four integrated phases.
 > Pub/Sub streaming, multi-tenant RBAC, GraphQL API, etc., on a "Weeks
 > 17-28" schedule) was removed during the 2026-09-19 honesty pass: none of
 > it was ever built, the week-based schedule was never real, and it
-> duplicated/contradicted the actual roadmap. See ROADMAP_HONEST.md for
+> duplicated/contradicted the actual roadmap. See docs/internal/ROADMAP_HONEST.md for
 > the current, honestly-scoped list of what's not built.
 
 ## Contributors

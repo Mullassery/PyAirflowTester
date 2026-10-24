@@ -56,7 +56,7 @@ itself):
   Python runtime + dev + web dependency set as of 2026-09-19 — re-run it yourself
   (`pip-audit`) since this drifts as new CVEs are published.
 - **mypy's 36 current type errors are not enforced** — the CI step runs `mypy ...  || true`,
-  so it never fails the build. See ROADMAP_HONEST.md for the count and file locations.
+  so it never fails the build. See docs/internal/ROADMAP_HONEST.md for the count and file locations.
 
 ## What is NOT true, corrected here (2026-09-19)
 

@@ -1,5 +1,10 @@
 # PyAirflowTester
 
+[![CI](https://github.com/Mullassery/PyAirflowTester/actions/workflows/ci.yml/badge.svg)](https://github.com/Mullassery/PyAirflowTester/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/pyairflowtester.svg)](https://pypi.org/project/pyairflowtester/)
+[![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://pypi.org/project/pyairflowtester/)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSE)
+
 Static analysis, dependency intelligence, and risk scoring for Airflow DAGs and dbt projects.
 
 > **Not to be confused with [PyDBTGuard](https://github.com/Mullassery/PyDBTGuard) or [PyBeamGuard](https://github.com/Mullassery/PyBeamGuard):** PyAirflowTester validates Airflow DAGs (and dbt runs); PyDBTGuard analyzes dbt manifests; PyBeamGuard analyzes Beam/Dataflow pipelines.
@@ -71,7 +76,7 @@ Decision: do not ship or expose it. No Rust-only behavior is both unique and tru
 
 ## Project status
 
-Version 0.5.4. Core commands (`scan`, `score`, `rules`, `dependency ...`, `serve`) are functional. The runtime correlation feature is stubbed (not implemented). See [ROADMAP_HONEST.md](ROADMAP_HONEST.md) for details.
+Version 0.5.4. Core commands (`scan`, `score`, `rules`, `dependency ...`, `serve`) are functional. The runtime correlation feature is stubbed (not implemented). See [docs/internal/ROADMAP_HONEST.md](docs/internal/ROADMAP_HONEST.md) for details.
 
 ## Installation
 
@@ -155,11 +160,11 @@ print(f"Blast radius: {blast.blast_radius} nodes, deployable: {blast.deployable}
 **Rejected / deferred:**
 - A test runner.
 
-Full shipped/blocked/rejected detail: [`QUEUE_STATUS.md`](QUEUE_STATUS.md).
+Full shipped/blocked/rejected detail: [`docs/internal/QUEUE_STATUS.md`](docs/internal/QUEUE_STATUS.md).
 
 ## Documentation
 
-- [ROADMAP_HONEST.md](ROADMAP_HONEST.md) - Known limitations and planned work
+- [docs/internal/ROADMAP_HONEST.md](docs/internal/ROADMAP_HONEST.md) - Known limitations and planned work
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
 - [Code of conduct](CODE_OF_CONDUCT.md)
