@@ -53,3 +53,92 @@ starts, and record the decision in the PR or changelog.
 - Copying features for parity.
 - Adding a dependency just because a competitor uses it.
 - Treating star counts or download counts as proof of user need.
+
+## OSS gap analysis — 2026-10-24
+
+Scope: open-source tools that validate Airflow DAGs, dbt artifacts, or the
+Airflow/dbt boundary before deployment; runtime products are included where
+they overlap run-history work. Dates and licenses verified 2026-10-24.
+
+### Comparable OSS projects
+
+- **Apache Airflow** — `https://github.com/apache/airflow`; Apache-2.0; v3.3.2
+  (2026-09-17). DagBag import validation, `dag.test`, and configuration checks;
+  no lint catalog, risk score, or cross-tool blast radius.
+- **Elementary** — `https://github.com/elementary-data/elementary`;
+  Apache-2.0; v0.26.1 (2026-10-11). dbt-native test results, alerts, lineage,
+  and report UI; no Airflow DAG analysis.
+- **Astronomer Cosmos** — `https://github.com/astronomer/astronomer-cosmos`;
+  Apache-2.0; v1.16.0a3 (2026-10-23; pre-release), v1.15.1 stable (2026-08-04).
+  Renders/runs dbt as Airflow tasks and parses the manifest; no static Airflow
+  lint or risk score.
+- **dbt-checkpoint** — `https://github.com/dbt-checkpoint/dbt-checkpoint`;
+  MIT; v2.0.10 (2026-06-18). Pre-commit hooks for dbt files and manifest
+  metadata; no Airflow coverage.
+
+### Capability comparison
+
+| Capability | PyAirflowTester | Apache Airflow | Elementary | Cosmos | dbt-checkpoint |
+| --- | --- | --- | --- | --- | --- |
+| Static Airflow DAG analysis (AST) | Yes | Partial | No | No | No |
+| Static dbt manifest analysis | Yes | No | Partial | Yes | Yes |
+| Unified Airflow + dbt graph | Yes | No | No | Partial | No |
+| Rule breadth incl. airflow.cfg | Yes | Partial | No | No | Partial |
+| Blast radius / impact | Yes | No | Partial | Partial | No |
+| Risk scoring | Yes | No | No | No | No |
+| Runtime run-history correlation | No | Yes | Yes | Yes | No |
+| Executes dbt tests or SQL | No | Partial | Yes | Yes | No |
+| SARIF/HTML/JSON reports | Yes | No | Partial | No | No |
+| Web UI | Partial | Yes | Yes | Partial | No |
+| CI/pre-commit gate | No | No | Partial | No | Yes |
+
+### Gaps that matter (ranked)
+
+1. **Runtime correlation is stubbed.** `Analyzer` raises
+   `AnalyzerNotImplementedError` for every run-history method
+   (`python/pyairflowtester/analyzer.py`); competitors reason over real runs.
+   Effort: L. Build; this is the largest credibility gap.
+2. **No CI failure gate.** `scan` always exits 0 and only writes SARIF/HTML
+   when `--output` is supplied; there is no `--fail-on`, so CI cannot fail a PR.
+   Effort: S. Build first; it is cheap and unlocks adoption.
+3. **No real-DAG validation corpus.** There are 235 Python tests and 35 Rust
+   tests, but no production-DAG corpus or false-positive study. Airflow 3 parser
+   coverage is asserted, not evidenced. Effort: M. Build a fixture corpus and
+   compare against DagBag import results.
+4. **`scan .` does not auto-discover inputs.** Without `--dags`, `--dbt`, and
+   `--airflow-cfg`, the path produces no analysis. Effort: S. Build discovery
+   with explicit overrides.
+5. **Risk scoring is unvalidated.** The score is a weighted severity formula
+   with no calibration and no explanation of which weights drive a critical
+   result. Effort: M. Build calibration and a transparent breakdown.
+6. **No dbt execution.** Elementary and Cosmos run dbt and expose real test
+   results. Effort: L. Defer or reject; integrate rather than reimplement.
+7. **Distribution and docs gaps.** Alpha, no GitHub release, a 404 docs URL,
+   and PyPI license metadata of `None` weaken trust. Effort: S. Fix before
+   adding features.
+
+### Where we are differentiated
+
+- Static analysis without an Airflow runtime, covering DAG code, dbt metadata, and `airflow.cfg` in one scan.
+- A unified graph connecting Airflow dependencies to dbt lineage for cross-tool blast radius.
+- Risk scoring and SARIF/HTML/JSON output aimed at pre-merge review.
+- OpenLineage ingestion into local SQLite; complements DagBag rather than replacing runtime checks.
+
+### Disposition
+
+**Build.** P1 is CI gating, runtime correlation, and evidence from real Airflow
+3.x DAGs; P2 is auto-discovery and score calibration. Defer the UI and reject a
+dbt runner. Do not claim production readiness until a real-DAG corpus and a
+non-zero CI gate exist.
+
+### Sources
+
+- https://github.com/apache/airflow/releases/tag/3.3.2
+- https://raw.githubusercontent.com/apache/airflow/main/LICENSE
+- https://github.com/elementary-data/elementary/releases/tag/v0.26.1
+- https://raw.githubusercontent.com/elementary-data/elementary/master/LICENSE
+- https://github.com/astronomer/astronomer-cosmos/releases/tag/astronomer-cosmos-v1.16.0a3
+- https://raw.githubusercontent.com/astronomer/astronomer-cosmos/main/LICENSE
+- https://github.com/dbt-checkpoint/dbt-checkpoint/releases/tag/v2.0.10
+- https://pypi.org/project/pyairflowtester/0.5.4/
+- Repository evidence: `README.md`, `AUDIT_FINDINGS.md`, `ROADMAP_HONEST.md`, `analyzer.py`, `cli.py`.
