@@ -80,7 +80,7 @@ A: Check Python version (3.10+), install dev dependencies: `pip install pyairflo
 
 ### GitHub Issues
 
-For bugs and feature requests: https://github.com/Mullassery/PyAirflowTester/issues
+For bugs and feature requests: ../PyAirflowTester/issues
 
 When opening an issue, include:
 - Clear description
@@ -91,7 +91,7 @@ When opening an issue, include:
 
 ### GitHub Discussions
 
-For general questions and discussions: https://github.com/Mullassery/PyAirflowTester/discussions
+For general questions and discussions: ../PyAirflowTester/discussions
 
 Great for:
 - Usage questions
@@ -156,10 +156,10 @@ print(f"Health: {health.overall_score:.0f}/100")
 
 ## Resources
 
-- GitHub: https://github.com/Mullassery/PyAirflowTester
+- GitHub: ../PyAirflowTester
 - PyPI: https://pypi.org/project/pyairflowtester/
-- Issues: https://github.com/Mullassery/PyAirflowTester/issues
-- Discussions: https://github.com/Mullassery/PyAirflowTester/discussions
+- Issues: ../PyAirflowTester/issues
+- Discussions: ../PyAirflowTester/discussions
 
 ## Staying Updated
 
@@ -169,7 +169,7 @@ print(f"Health: {health.overall_score:.0f}/100")
 
 ## Report a Bug
 
-Found an issue? Open a GitHub issue: https://github.com/Mullassery/PyAirflowTester/issues
+Found an issue? Open a GitHub issue: ../PyAirflowTester/issues
 
 Include:
 - Bug description
@@ -179,7 +179,7 @@ Include:
 
 ## Suggest a Feature
 
-Have a great idea? Open a discussion: https://github.com/Mullassery/PyAirflowTester/discussions
+Have a great idea? Open a discussion: ../PyAirflowTester/discussions
 
 Include:
 - Feature description

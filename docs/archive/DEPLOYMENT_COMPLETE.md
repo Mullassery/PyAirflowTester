@@ -2,7 +2,7 @@
 
 **Status:** DEPLOYED TO PYPI AND GITHUB  
 **Date:** August 2, 2024  
-**Repository:** https://github.com/Mullassery/PyAirflowTester
+**Repository:** ../PyAirflowTester
 
 ---
 
@@ -16,7 +16,7 @@
   - pyairflowtester-0.1.0.tar.gz (131 KB)
 
 ### GitHub Release
-- **Release URL:** https://github.com/Mullassery/PyAirflowTester/releases/tag/v0.1.0
+- **Release URL:** ../PyAirflowTester/releases/tag/v0.1.0
 - **Tag:** v0.1.0
 - **Artifacts Attached:** 2 wheels + source distribution
 - **Release Notes:** Comprehensive documentation of all features
@@ -43,7 +43,7 @@ pip install pyairflowtester-0.1.0-cp313-cp313-macosx_11_0_arm64.whl
 
 ### From Source
 ```bash
-git clone https://github.com/Mullassery/PyAirflowTester.git
+git clone ../PyAirflowTester
 cd PyAirflowTester
 pip install -e ".[dev,otel]"
 ```
@@ -158,7 +158,7 @@ Complete documentation available:
 ## GitHub Repository
 
 All code, documentation, and examples available at:
-https://github.com/Mullassery/PyAirflowTester
+../PyAirflowTester
 
 **Repository Structure:**
 ```
@@ -207,8 +207,8 @@ pyairflowtester/
 
 ## Support
 
-- Issues: https://github.com/Mullassery/PyAirflowTester/issues
-- Repository: https://github.com/Mullassery/PyAirflowTester
+- Issues: ../PyAirflowTester/issues
+- Repository: ../PyAirflowTester
 - PyPI: https://pypi.org/project/pyairflowtester/
 
 ---
@@ -227,6 +227,6 @@ PyAirflowTester v0.1.0 is a complete, production-grade enterprise platform for A
 
 **Deployed to:**
 - PyPI (https://pypi.org/project/pyairflowtester/)
-- GitHub (https://github.com/Mullassery/PyAirflowTester/releases/tag/v0.1.0)
+- GitHub (../PyAirflowTester/releases/tag/v0.1.0)
 
 Enterprise-grade dependency intelligence. Production-ready. Battle-tested with 200+ tests and 85%+ coverage.

@@ -171,7 +171,7 @@ Proprietary. See LICENSE file for details.
 ## Support
 
 For issues, questions, or feature requests:
-- GitHub Issues: https://github.com/Mullassery/PyAirflowTester/issues
+- GitHub Issues: ../PyAirflowTester/issues
 - Documentation: https://github.com/Mullassery/PyAirflowTester#documentation
 
 ## Artifacts
@@ -182,7 +182,7 @@ For issues, questions, or feature requests:
 
 **Available on:**
 - PyPI: https://pypi.org/project/pyairflowtester/
-- GitHub: https://github.com/Mullassery/PyAirflowTester/releases
+- GitHub: ../PyAirflowTester/releases
 
 ---
 

@@ -409,7 +409,7 @@ Initial production release of PyAirflowTester with all four integrated phases.
 ### Distribution
 
 - Published to PyPI: https://pypi.org/project/pyairflowtester/
-- Published to GitHub: https://github.com/Mullassery/PyAirflowTester/releases/tag/v0.1.0
+- Published to GitHub: ../PyAirflowTester/releases/tag/v0.1.0
 - Binary wheel for macOS ARM64
 - Source distribution (.tar.gz)
 
@@ -427,8 +427,8 @@ Initial production release of PyAirflowTester with all four integrated phases.
 
 ## Support
 
-- Issues: https://github.com/Mullassery/PyAirflowTester/issues
-- Discussions: https://github.com/Mullassery/PyAirflowTester/discussions
+- Issues: ../PyAirflowTester/issues
+- Discussions: ../PyAirflowTester/discussions
 - Documentation: See README and root .md files
 
 ## License

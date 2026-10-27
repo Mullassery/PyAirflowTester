@@ -269,9 +269,9 @@ Want to discuss? Use GitHub Discussions
 
 ## Repository Links
 
-- **GitHub:** https://github.com/Mullassery/PyAirflowTester
+- **GitHub:** ../PyAirflowTester
 - **PyPI:** https://pypi.org/project/pyairflowtester/
-- **Release:** https://github.com/Mullassery/PyAirflowTester/releases/tag/v0.1.0
+- **Release:** ../PyAirflowTester/releases/tag/v0.1.0
 
 ---
 

@@ -54,7 +54,7 @@ Enhancement suggestions are tracked as GitHub issues. Include:
 ### Installation
 
 ```bash
-git clone https://github.com/Mullassery/PyAirflowTester.git
+git clone ../PyAirflowTester
 cd PyAirflowTester
 pip install -e ".[dev,web]"
 pre-commit install
